@@ -199,6 +199,11 @@ dialog::backdrop{background:rgba(5,9,40,.82)}
       </div>
       <label class="toggle"><input type="checkbox" id="optDeduct"> Wrong answers lose the question's points</label>
       <label class="toggle"><input type="checkbox" id="optSound"> Wheel tick sound</label>
+      <label class="toggle"><input type="checkbox" id="optSfx"> Suspense music, applause and booing</label>
+      <div class="row">
+        <div><label for="optVol">Sound volume</label><input type="range" id="optVol" min="0" max="100" style="width:100%;accent-color:var(--gold)"></div>
+        <button class="btn shrink" id="testSfx">Test sounds</button>
+      </div>
     </div>
 
     <div class="panel stack">
@@ -319,14 +324,14 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const DEFAULT_RULES =
 `1. Players take turns spinning the wheel.
 2. The slice the wheel stops on decides the section, the question and the points.
-3. The player whose turn it is answers first. If they get it wrong, others may try.
+3. Only the player whose turn it is may answer.
 4. A correct answer wins the points. A wrong answer loses them (if the host turned that on).
 5. Answered questions are greyed out and the wheel will not stop on them again.
 6. Highest score when every question is answered wins.`;
 
 function blankState(){
   return { title:'Spin Jeopardy', rules:DEFAULT_RULES,
-    settings:{ wheelMode:'questions', usedMode:'gray', timer:30, spinSeconds:5, deductWrong:true, sound:true },
+    settings:{ wheelMode:'questions', usedMode:'gray', timer:30, spinSeconds:5, deductWrong:true, sound:true, sfx:true, volume:70 },
     sections:[], questions:[], teams:[], turn:0 };
 }
 function sampleState(){
@@ -378,7 +383,7 @@ function renderSetup(){
   document.querySelectorAll('input[name=wheelMode]').forEach(r => r.checked = r.value === S.settings.wheelMode);
   document.querySelectorAll('input[name=usedMode]').forEach(r => r.checked = r.value === S.settings.usedMode);
   $('#optTimer').value = S.settings.timer; $('#optSpin').value = S.settings.spinSeconds;
-  $('#optDeduct').checked = S.settings.deductWrong; $('#optSound').checked = S.settings.sound;
+  $('#optDeduct').checked = S.settings.deductWrong; $('#optSound').checked = S.settings.sound; $('#optSfx').checked = S.settings.sfx; $('#optVol').value = S.settings.volume;
 
   $('#secList').innerHTML = S.sections.length ? S.sections.map(s => {
     const n = S.questions.filter(q => q.sectionId === s.id).length;
@@ -420,6 +425,10 @@ $('#optTimer').onchange = e => { S.settings.timer = Math.max(0, +e.target.value 
 $('#optSpin').onchange = e => { S.settings.spinSeconds = Math.min(15, Math.max(2, +e.target.value || 5)); e.target.value = S.settings.spinSeconds; save(); };
 $('#optDeduct').onchange = e => { S.settings.deductWrong = e.target.checked; save(); };
 $('#optSound').onchange = e => { S.settings.sound = e.target.checked; save(); };
+$('#optSfx').onchange = e => { S.settings.sfx = e.target.checked; save(); };
+$('#optVol').oninput = e => { S.settings.volume = +e.target.value; if (master.g) master.g.gain.value = S.settings.volume / 100; save(); };
+$('#testSfx').onclick = () => { if (!S.settings.sfx) return toast('Turn on the sounds option first.');
+  Suspense.start(); setTimeout(() => { Suspense.stop(); applause(); }, 3500); setTimeout(boo, 7000); };
 
 function addSection(name){
   name = name.trim(); if (!name) return null;
@@ -598,18 +607,134 @@ function draw(){
 }
 
 /* sound */
-let actx = null;
+let actx = null, noiseBuf = null;
+function ac(){
+  actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function master(){
+  const a = ac();
+  if (!master.g){ master.g = a.createGain(); master.g.connect(a.destination); }
+  master.g.gain.value = (S.settings.volume ?? 70) / 100;
+  return master.g;
+}
+function noise(){
+  const a = ac(); if (noiseBuf) return noiseBuf;
+  const len = a.sampleRate * 2; noiseBuf = a.createBuffer(1, len, a.sampleRate);
+  const d = noiseBuf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  return noiseBuf;
+}
+function env(g, t, peak, attack, decay){
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+}
 function tick(){
   if (!S.settings.sound) return;
-  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    const o = actx.createOscillator(), g = actx.createGain();
-    o.type = 'square'; o.frequency.value = 1400; g.gain.setValueAtTime(0.06, actx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.035);
-    o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.04); } catch(e){}
+  try { const a = ac(), o = a.createOscillator(), g = a.createGain();
+    o.type = 'square'; o.frequency.value = 1400; env(g, a.currentTime, 0.06, 0.001, 0.035);
+    o.connect(g).connect(master()); o.start(); o.stop(a.currentTime + 0.05); } catch(e){}
+}
+
+/* Suspense loop: dark pad + heartbeat bass + ticking hi-hat; speeds up when time is low */
+const Suspense = {
+  on:false, id:null, next:0, beat:0, pad:null,
+  start(){
+    if (!S.settings.sfx || this.on) return;
+    try {
+      const a = ac(), out = master(); this.on = true; this.beat = 0; this.next = a.currentTime + 0.05;
+      const g = a.createGain(); g.gain.setValueAtTime(0.0001, a.currentTime); g.gain.exponentialRampToValueAtTime(0.06, a.currentTime + 1.2);
+      const lp = a.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 600;
+      const oscs = [110, 116.54, 164.81].map(f => { const o = a.createOscillator(); o.type = 'triangle'; o.frequency.value = f; o.connect(lp); o.start(); return o; });
+      const lfo = a.createOscillator(), lg = a.createGain(); lfo.frequency.value = 0.3; lg.gain.value = 250; lfo.connect(lg).connect(lp.frequency); lfo.start();
+      lp.connect(g).connect(out); this.pad = { g, nodes:[...oscs, lfo] };
+      this.id = setInterval(() => this.schedule(), 25);
+    } catch(e){ this.on = false; }
+  },
+  schedule(){
+    const a = ac(); const T = +S.settings.timer || 0;
+    const urgent = T > 0 && timeLeft <= Math.max(5, T * 0.25);
+    const step = 60 / (urgent ? 150 : 104) / 2;
+    while (this.next < a.currentTime + 0.12){
+      const t = this.next, b = this.beat % 8;
+      if (b === 0 || b === 4) this.bass(t, 55, 0.5);
+      else if (b === 1 || b === 5) this.bass(t, 55, 0.28);
+      if (b % 2 === 1 || urgent) this.hat(t, b % 2 ? 0.05 : 0.025);
+      if (b === 6) this.bell(t, (this.beat % 16 === 6) ? 440 : 466.16);
+      this.beat++; this.next += step;
+    }
+  },
+  bass(t, f, v){ const a = ac(), o = a.createOscillator(), g = a.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(f * 2, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.06);
+    env(g, t, v, 0.005, 0.28); o.connect(g).connect(master()); o.start(t); o.stop(t + 0.35); },
+  hat(t, v){ const a = ac(), s = a.createBufferSource(), hp = a.createBiquadFilter(), g = a.createGain();
+    s.buffer = noise(); hp.type = 'highpass'; hp.frequency.value = 7000; env(g, t, v, 0.001, 0.04);
+    s.connect(hp).connect(g).connect(master()); s.start(t, Math.random(), 0.06); },
+  bell(t, f){ const a = ac(), o = a.createOscillator(), g = a.createGain();
+    o.type = 'sine'; o.frequency.value = f; env(g, t, 0.05, 0.01, 0.5); o.connect(g).connect(master()); o.start(t); o.stop(t + 0.6); },
+  stop(){
+    if (!this.on) return; this.on = false; clearInterval(this.id);
+    try { const a = ac(), { g, nodes } = this.pad;
+      g.gain.cancelScheduledValues(a.currentTime); g.gain.setValueAtTime(Math.max(g.gain.value, 0.0001), a.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.25); nodes.forEach(n => n.stop(a.currentTime + 0.3)); } catch(e){}
+  }
+};
+
+/* Crowd applause: many short filtered noise claps plus a small fanfare */
+function applause(){
+  if (!S.settings.sfx) return;
+  try {
+    const a = ac(), out = master(), buf = noise(), t0 = a.currentTime + 0.02, dur = 3.2;
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { const o = a.createOscillator(), g = a.createGain();
+      o.type = 'triangle'; o.frequency.value = f; const t = t0 + i * 0.09; env(g, t, 0.12, 0.01, i === 3 ? 0.6 : 0.15);
+      o.connect(g).connect(out); o.start(t); o.stop(t + 0.8); });
+    const bed = a.createBufferSource(), bbp = a.createBiquadFilter(), bg = a.createGain();
+    bed.buffer = buf; bed.loop = true; bbp.type = 'bandpass'; bbp.frequency.value = 1500; bbp.Q.value = 0.6;
+    bg.gain.setValueAtTime(0.0001, t0); bg.gain.exponentialRampToValueAtTime(0.07, t0 + 0.3); bg.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    bed.connect(bbp).connect(bg).connect(out); bed.start(t0); bed.stop(t0 + dur + 0.1);
+    for (let i = 0; i < 220; i++){
+      const t = t0 + Math.pow(Math.random(), 1.5) * dur, fade = Math.max(0.12, 1 - (t - t0) / dur);
+      const s = a.createBufferSource(), bp = a.createBiquadFilter(), g = a.createGain();
+      s.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 900 + Math.random() * 1800; bp.Q.value = 1 + Math.random() * 2;
+      env(g, t, (0.2 + Math.random() * 0.35) * fade, 0.002, 0.025 + Math.random() * 0.05);
+      s.connect(bp).connect(g).connect(out); s.start(t, Math.random() * 1.8, 0.1);
+    }
+  } catch(e){}
+}
+
+/* Crowd booing: several detuned low voices with an "oo" formant, sliding down */
+function boo(){
+  if (!S.settings.sfx) return;
+  try {
+    const a = ac(), out = master(), t0 = a.currentTime + 0.02, dur = 2.3;
+    const lp = a.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 650; lp.Q.value = 2;
+    const g = a.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.3);
+    g.gain.setValueAtTime(0.35, t0 + dur - 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    lp.connect(g).connect(out);
+    for (let i = 0; i < 8; i++){
+      const base = 90 + Math.random() * 80, st = t0 + Math.random() * 0.3;
+      const o = a.createOscillator(), vg = a.createGain(), lfo = a.createOscillator(), lg = a.createGain();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(base * 1.1, st); o.frequency.linearRampToValueAtTime(base * 0.78, t0 + dur);
+      lfo.frequency.value = 4 + Math.random() * 3; lg.gain.value = 3 + Math.random() * 4; lfo.connect(lg).connect(o.frequency);
+      vg.gain.value = 0.12; o.connect(vg).connect(lp); o.start(st); lfo.start(st); o.stop(t0 + dur + 0.05); lfo.stop(t0 + dur + 0.05);
+    }
+    const n = a.createBufferSource(), nbp = a.createBiquadFilter(), ng = a.createGain();
+    n.buffer = noise(); nbp.type = 'bandpass'; nbp.frequency.value = 400; nbp.Q.value = 0.8;
+    ng.gain.setValueAtTime(0.0001, t0); ng.gain.exponentialRampToValueAtTime(0.06, t0 + 0.3); ng.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    n.connect(nbp).connect(ng).connect(out); n.start(t0); n.stop(t0 + dur + 0.05);
+  } catch(e){}
+}
+
+/* Time's up buzzer */
+function buzzer(){
+  if (!S.settings.sfx) return;
+  try { const a = ac(), t = a.currentTime, g = a.createGain(); env(g, t, 0.15, 0.01, 0.7); g.connect(master());
+    [118, 124].forEach(f => { const o = a.createOscillator(); o.type = 'square'; o.frequency.value = f; o.connect(g); o.start(t); o.stop(t + 0.75); }); } catch(e){}
 }
 
 function spin(){
   if (spinning) return;
+  if (S.settings.sfx || S.settings.sound) { try { ac(); } catch(e){} }
   const segs = segments();
   const openIdx = segs.map((g, i) => g.used ? -1 : i).filter(i => i >= 0);
   if (!openIdx.length){ toast(S.questions.length ? 'Every question has been answered.' : 'Add questions in Setup first.'); return; }
@@ -697,8 +822,9 @@ function openQuestion(q){
   clearInterval(timerId); paused = false; $('#qdPause').textContent = 'Pause';
   const T = +S.settings.timer || 0;
   $('#qdTimerWrap').hidden = T === 0;
-  if (T > 0){ timeLeft = T; updateTimer(true); timerId = setInterval(() => { if (paused) return; timeLeft--; updateTimer(); if (timeLeft <= 0){ clearInterval(timerId); toast("Time's up!"); } }, 1000); }
+  if (T > 0){ timeLeft = T; updateTimer(true); timerId = setInterval(() => { if (paused) return; timeLeft--; updateTimer(); if (timeLeft <= 0){ clearInterval(timerId); Suspense.stop(); buzzer(); toast("Time's up!"); } }, 1000); }
   $('#qDialog').showModal();
+  Suspense.start();
 }
 function updateTimer(instant){
   const T = +S.settings.timer, bar = $('#qdTimer i');
@@ -707,25 +833,27 @@ function updateTimer(instant){
   $('#qdTimer').classList.toggle('low', timeLeft <= Math.min(5, T * 0.25));
   $('#qdTimeText').textContent = timeLeft > 0 ? `${timeLeft} second${timeLeft===1?'':'s'} left` : "Time's up";
 }
-$('#qdPause').onclick = () => { paused = !paused; $('#qdPause').textContent = paused ? 'Resume' : 'Pause'; };
+$('#qdPause').onclick = () => { paused = !paused; $('#qdPause').textContent = paused ? 'Resume' : 'Pause';
+  if (paused) Suspense.stop(); else if ($('#qdAnswer').hidden && timeLeft > 0) Suspense.start(); };
 function renderAward(){
   if (!S.teams.length){ $('#qdAward').innerHTML = ''; return; }
-  $('#qdAward').innerHTML = S.teams.map((t, i) => `<div class="arow ${i === S.turn ? 'current' : ''}"><span>${esc(t.name)}</span>
+  const t = S.teams[S.turn % S.teams.length];
+  $('#qdAward').innerHTML = `<div class="arow"><span>${esc(t.name)}</span>
     <button class="btn small good" data-right="${t.id}">Correct +${activeQ.points}</button>
-    <button class="btn small bad" data-wrong="${t.id}">Wrong${S.settings.deductWrong ? ' −' + activeQ.points : ''}</button></div>`).join('');
+    <button class="btn small bad" data-wrong="${t.id}">Wrong${S.settings.deductWrong ? ' −' + activeQ.points : ''}</button></div>`;
 }
-$('#qdReveal').onclick = () => { $('#qdAnswer').hidden = false; $('#qdReveal').hidden = true; paused = true; $('#qdPause').textContent = 'Resume'; };
+$('#qdReveal').onclick = () => { Suspense.stop(); $('#qdAnswer').hidden = false; $('#qdReveal').hidden = true; paused = true; $('#qdPause').textContent = 'Resume'; };
 $('#qdAward').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || !activeQ) return;
   if (b.dataset.right){ const t = S.teams.find(x => x.id === b.dataset.right); t.score += +activeQ.points;
-    toast(`${t.name} +${activeQ.points}`); finishQuestion(true); }
-  if (b.dataset.wrong){ const t = S.teams.find(x => x.id === b.dataset.wrong);
+    toast(`${t.name} +${activeQ.points}`); Suspense.stop(); applause(); finishQuestion(true); }
+  if (b.dataset.wrong){ const t = S.teams.find(x => x.id === b.dataset.wrong); Suspense.stop(); clearInterval(timerId); boo();
     if (S.settings.deductWrong){ t.score -= +activeQ.points; toast(`${t.name} −${activeQ.points}`); } else toast(`${t.name}: wrong`);
     b.disabled = true; b.previousElementSibling.disabled = true; save(); renderPlay(); }
 });
 function finishQuestion(markUsed){
   if (resolved) return; resolved = true;
-  clearInterval(timerId);
+  clearInterval(timerId); Suspense.stop();
   if (activeQ && markUsed){ activeQ.used = true; if (S.teams.length) S.turn = (S.turn + 1) % S.teams.length; }
   activeQ = null; save();
   if ($('#qDialog').open) $('#qDialog').close();

@@ -7,14 +7,14 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎡</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Figtree:wght@400;600;800&family=Noto+Nastaliq+Urdu:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --navy:#101a5c; --navy-2:#17237a; --navy-3:#1f2e96; --line:#2d3ca8;
   --gold:#ffc940; --gold-dim:#b8892a; --ink:#ffffff; --muted:#aeb6ea;
   --good:#2ec4b6; --bad:#ff5c5c; --used:#373c63;
   --display:'Bungee', 'Impact', 'Arial Black', sans-serif;
-  --body:'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --body:'Figtree', 'Noto Nastaliq Urdu', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme:dark;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
@@ -118,7 +118,16 @@ dialog::backdrop{background:rgba(5,9,40,.82)}
 .qmeta{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
 .tag{padding:.25rem .7rem;border-radius:999px;font-weight:800;font-size:.9rem}
 .qpoints{font-family:var(--display);color:var(--gold);font-size:1.4rem;margin-left:auto}
-.qbody{font-size:clamp(1.3rem,3.2vw,2rem);font-weight:800;line-height:1.3;margin:0 0 1.2rem;overflow-wrap:anywhere}
+.qbody{font-size:clamp(1.3rem,3.2vw,2rem);font-weight:800;line-height:1.7;margin:0 0 1.2rem;overflow-wrap:anywhere;unicode-bidi:plaintext;white-space:pre-wrap}
+.ar{font-family:'Amiri','Noto Naskh Arabic','Traditional Arabic',serif;direction:rtl;text-align:right;line-height:2.1}
+textarea.ar{font-size:1.35rem}
+.qar{font-size:clamp(1.6rem,3.6vw,2.4rem);margin:0 0 1.2rem;background:var(--navy);border-radius:12px;padding:.4rem 1rem}
+.qimg{display:block;max-width:100%;max-height:34vh;margin:0 auto 1.2rem;border-radius:12px;cursor:zoom-in;background:#fff}
+.qimg.zoom{max-height:80vh;cursor:zoom-out}
+.imgprev{display:flex;align-items:center;gap:.8rem;margin-top:.6rem}
+.imgprev img{max-height:90px;max-width:160px;border-radius:8px;background:#fff}
+.qitem .thumb{max-height:48px;max-width:80px;border-radius:6px;margin-top:.3rem;display:block;background:#fff}
+.qtext,.ans,.answer b{unicode-bidi:plaintext}
 .timer{height:10px;background:var(--navy);border-radius:99px;overflow:hidden;margin-bottom:.4rem}
 .timer i{display:block;height:100%;background:var(--gold);width:100%;transition:width 1s linear}
 .timer.low i{background:var(--bad)}
@@ -130,6 +139,8 @@ dialog::backdrop{background:rgba(5,9,40,.82)}
 .award .arow span{flex:1;font-weight:700}
 .award .arow.current span::after{content:'  (their turn)';color:var(--gold);font-weight:400;font-size:.85rem}
 .qfoot{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+.dbl{background:var(--gold);color:var(--navy);border-radius:12px;padding:.6rem .9rem;margin-bottom:1rem;font-weight:700}
+.dbl strong{font-family:var(--display);font-weight:400;font-size:1.15rem;display:block}
 .rulestext{white-space:pre-wrap;font-size:1.05rem}
 
 .toast{position:fixed;left:50%;bottom:calc(1.2rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--gold);color:var(--navy);
@@ -224,14 +235,26 @@ dialog::backdrop{background:rgba(5,9,40,.82)}
   <div>
     <div class="panel stack">
       <h2 id="qFormTitle">Add a question</h2>
+      <div><label for="qType">Question type</label>
+        <select id="qType"><option value="regular">Regular question (its own slice in a section)</option><option value="double">Double your points question (gets its own gold slice)</option></select></div>
       <div class="row">
-        <div><label for="qSec">Section</label><select id="qSec"></select></div>
+        <div id="qSecWrap"><label for="qSec">Section</label><select id="qSec"></select></div>
         <div><label for="qDiff">Difficulty</label>
-          <select id="qDiff"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></div>
-        <div><label for="qPts">Points</label><input type="number" id="qPts" step="50" min="0"></div>
+          <select id="qDiff"><option>Very easy</option><option>Easy</option><option selected>Medium</option><option>Hard</option><option>Very hard</option></select></div>
+        <div id="qPtsWrap"><label for="qPts">Points</label><input type="number" id="qPts" step="50" min="0"></div>
       </div>
-      <div><label for="qText">Question</label><textarea id="qText" rows="3"></textarea></div>
-      <div><label for="qAns">Answer</label><input type="text" id="qAns"></div>
+      <p class="hint" id="qDoubleHint" hidden style="margin:0">Each Double question adds one gold slice to the wheel. Right answer doubles the team's score, wrong answer halves it, so it has no points of its own.</p>
+      <div><label for="qText">Question (English, Urdu or both)</label><textarea id="qText" rows="3" dir="auto"></textarea></div>
+      <div><label for="qAr">Arabic text, for example an ayah (optional)</label><textarea id="qAr" rows="2" dir="rtl" class="ar"></textarea></div>
+      <div><label>Picture (optional)</label>
+        <div class="row">
+          <button class="btn shrink" id="qImgBtn" type="button">Choose picture</button>
+          <input type="file" id="qImgFile" accept="image/*" hidden>
+          <div><input type="text" id="qImgUrl" placeholder="or paste an image link, https://..." aria-label="Image link"></div>
+        </div>
+        <div class="imgprev" id="qImgPrev" hidden><img alt="Picture preview"><button class="btn small ghost" id="qImgRemove" type="button">Remove picture</button></div>
+      </div>
+      <div><label for="qAns">Answer</label><input type="text" id="qAns" dir="auto"></div>
       <div class="row">
         <button class="btn primary shrink" id="saveQ">Add question</button>
         <button class="btn ghost shrink" id="cancelEdit" hidden>Cancel edit</button>
@@ -240,7 +263,7 @@ dialog::backdrop{background:rgba(5,9,40,.82)}
 
     <div class="panel">
       <h2>Paste many questions</h2>
-      <p class="hint">One per line: Section, Question, Answer, Difficulty, Points. Use quotes around text that contains commas. New sections are created automatically.</p>
+      <p class="hint">One per line: Section, Question, Answer, Difficulty, Points. Difficulty is Very easy, Easy, Medium, Hard or Very hard. Write Double as the section for a Double your points question. Optional 6th and 7th columns: Arabic text, image link. Use quotes around text that contains commas.</p>
       <textarea id="csvIn" rows="4" placeholder='Science, "Which planet is known as the Red Planet?", Mars, Easy, 100'></textarea>
       <div class="row" style="margin-top:.6rem"><button class="btn shrink" id="csvBtn">Add these questions</button></div>
     </div>
@@ -286,12 +309,15 @@ dialog::backdrop{background:rgba(5,9,40,.82)}
       <span class="tag" id="qdDiff" style="background:var(--navy);color:var(--muted)"></span>
       <span class="qpoints" id="qdPts"></span>
     </div>
-    <p class="qbody" id="qdBody"></p>
+    <div class="dbl" id="qdDouble" hidden><strong>Double your points</strong>Right answer doubles your score. Wrong answer halves it.</div>
+    <p class="qbody" id="qdBody" dir="auto"></p>
+    <p class="ar qar" id="qdAr" hidden></p>
+    <img class="qimg" id="qdImg" alt="Question picture" hidden>
     <div id="qdTimerWrap">
       <div class="timer" id="qdTimer"><i></i></div>
       <div class="timertext"><span id="qdTimeText"></span><button class="btn small ghost" id="qdPause">Pause</button></div>
     </div>
-    <div class="answer" id="qdAnswer" hidden>Answer: <b id="qdAnsText"></b></div>
+    <div class="answer" id="qdAnswer" hidden>Answer: <b id="qdAnsText" dir="auto"></b></div>
     <button class="btn" id="qdReveal">Show answer</button>
     <div class="award" id="qdAward"></div>
     <div class="qfoot">
@@ -316,7 +342,8 @@ dialog::backdrop{background:rgba(5,9,40,.82)}
 'use strict';
 const LS = 'spinJeopardy.v1';
 const PALETTE = ['#E4572E','#29B6F6','#8BC34A','#AB47BC','#FFB300','#26A69A','#EC407A','#7E8CE0','#FF8A50','#C0CA33','#4DD0E1','#F06292'];
-const DIFF_PTS = { Easy:100, Medium:200, Hard:300 };
+const DIFF_PTS = { 'Very easy':100, 'Easy':200, 'Medium':300, 'Hard':400, 'Very hard':500 };
+const DIFFS = Object.keys(DIFF_PTS);
 const $ = s => document.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2, 10);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -327,7 +354,8 @@ const DEFAULT_RULES =
 3. Only the player whose turn it is may answer.
 4. A correct answer wins the points. A wrong answer loses them (if the host turned that on).
 5. Answered questions are greyed out and the wheel will not stop on them again.
-6. Highest score when every question is answered wins.`;
+6. Land on "Double your points": a right answer doubles your score, a wrong answer halves it.
+7. Highest score when every question is answered wins.`;
 
 function blankState(){
   return { title:'Spin Jeopardy', rules:DEFAULT_RULES,
@@ -338,10 +366,11 @@ function sampleState(){
   const s = blankState(); s.title = 'Family Quiz Night';
   const add = (name, qs) => { const id = uid(); s.sections.push({id, name, color:PALETTE[s.sections.length % PALETTE.length]});
     qs.forEach(([t,a,d]) => s.questions.push({id:uid(), sectionId:id, text:t, answer:a, difficulty:d, points:DIFF_PTS[d], used:false})); };
-  add('Geography', [['What is the capital of Canada?','Ottawa','Easy'],['Which river is the longest in the world?','The Nile (some measures say the Amazon)','Medium'],['Which country has the most natural lakes?','Canada','Hard']]);
-  add('Science', [['Which planet is known as the Red Planet?','Mars','Easy'],['What gas do plants absorb from the air?','Carbon dioxide','Medium'],['What is the chemical symbol for gold?','Au','Hard']]);
-  add('Food', [['Which fruit is dried to make raisins?','Grapes','Easy'],['Saffron comes from which part of a flower?','The stigma','Medium'],['Which country is the origin of the dish biryani most often credited to?','India / South Asia (with Persian roots)','Hard']]);
-  add('Numbers', [['How many days are in a leap year?','366','Easy'],['How many sides does a hexagon have?','Six','Medium'],['What is 15% of 200?','30','Hard']]);
+  add('Geography', [['What is the capital of Canada?','Ottawa','Very easy'],['Which ocean lies between Africa and Australia?','Indian Ocean','Easy'],['Which river is the longest in the world?','The Nile (some measures say the Amazon)','Medium'],['Which country has the most natural lakes?','Canada','Hard'],['Which country has the most time zones, counting its overseas territories?','France (12)','Very hard']]);
+  add('Science', [['Which planet is known as the Red Planet?','Mars','Very easy'],['What gas do plants absorb from the air?','Carbon dioxide','Easy'],['What is the chemical symbol for gold?','Au','Medium'],['What is the hardest natural substance?','Diamond','Hard'],['What is the most abundant gas in Earth\'s atmosphere?','Nitrogen','Very hard']]);
+  add('Numbers', [['How many days are in a leap year?','366','Very easy'],['How many sides does a hexagon have?','Six','Easy'],['What is 15% of 200?','30','Medium'],['What is the square root of 169?','13','Hard'],['How many seconds are in a day?','86,400','Very hard']]);
+  s.questions.push({id:uid(), double:true, sectionId:null, text:'What is the largest desert in the world?', answer:'Antarctica (the largest hot desert is the Sahara)', difficulty:'Hard', points:0, used:false});
+  s.questions.push({id:uid(), double:true, sectionId:null, text:'How many bones are in the adult human body?', answer:'206', difficulty:'Hard', points:0, used:false});
   s.teams = [{id:uid(), name:'Team A', score:0},{id:uid(), name:'Team B', score:0}];
   return s;
 }
@@ -358,6 +387,7 @@ function normalize(d){
     teams:Array.isArray(d.teams)?d.teams:[], turn:Number(d.turn)||0 };
 }
 let S = load() || sampleState();
+
 function save(){ try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){} }
 
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2600); }
@@ -374,6 +404,33 @@ function showTab(which){
 }
 $('#tabSetup').onclick = () => showTab('setup');
 $('#tabPlay').onclick = () => showTab('play');
+
+/* ================= PICTURES (IndexedDB, holds far more than localStorage) ================= */
+const IMG = {
+  db:null, cache:new Map(),
+  open(){ if (this.db) return Promise.resolve(this.db);
+    return new Promise((res, rej) => { const r = indexedDB.open('spinJeopardyImages', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('img');
+      r.onsuccess = () => { this.db = r.result; res(this.db); }; r.onerror = () => rej(r.error); }); },
+  async tx(mode, fn){ const db = await this.open();
+    return new Promise((res, rej) => { const t = db.transaction('img', mode); const out = fn(t.objectStore('img'));
+      t.oncomplete = () => res(out && out.result); t.onerror = () => rej(t.error); }); },
+  async put(id, data){ this.cache.set(id, data); return this.tx('readwrite', st => st.put(data, id)); },
+  async get(id){ if (!id) return null; if (this.cache.has(id)) return this.cache.get(id);
+    try { const d = await this.tx('readonly', st => st.get(id)); if (d) this.cache.set(id, d); return d || null; } catch(e){ return null; } },
+  async del(id){ if (!id) return; this.cache.delete(id); try { await this.tx('readwrite', st => st.delete(id)); } catch(e){} },
+  async clear(){ this.cache.clear(); try { await this.tx('readwrite', st => st.clear()); } catch(e){} }
+};
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch(e){}
+async function imgSrc(q){ return q.imageUrl || (q.imageId ? await IMG.get(q.imageId) : null); }
+function shrinkImage(file, max = 1280){
+  return new Promise((res, rej) => { const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height));
+      const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', 0.85)); };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('bad image')); }; im.src = url; });
+}
 
 /* ================= SETUP ================= */
 let editingId = null;
@@ -403,18 +460,23 @@ function renderSetup(){
   if (S.sections.some(s => s.id === cur)) $('#qSec').value = cur;
   if (!$('#qPts').value) $('#qPts').value = DIFF_PTS[$('#qDiff').value];
 
-  const total = S.questions.length, used = S.questions.filter(q => q.used).length;
-  $('#qSummary').textContent = total ? `${total} questions, ${used} answered, ${S.questions.reduce((a,q)=>a+(+q.points||0),0)} points on the board.` : '';
+  const regs = S.questions.filter(q => !q.double), dbls = S.questions.filter(q => q.double);
+  const used = S.questions.filter(q => q.used).length;
+  $('#qSummary').textContent = S.questions.length ? `${regs.length} regular and ${dbls.length} Double questions, ${used} answered, ${regs.reduce((a,q)=>a+(+q.points||0),0)} points on the board.` : '';
+  const item = (q, pts) => `<div class="qitem ${q.used?'used':''}">
+        <div><div class="pts">${pts}</div><div class="diff">${esc(q.difficulty)}${q.used?'<br>answered':''}</div></div>
+        <div><div class="qtext" dir="auto">${esc(q.text)}</div>${q.arabic ? `<div class="ar">${esc(q.arabic)}</div>` : ''}<div class="ans" dir="auto">Answer: ${esc(q.answer)}</div>${q.imageId || q.imageUrl ? `<img class="thumb" data-thumb="${q.id}" alt="">` : ''}</div>
+        <div class="acts"><button class="btn small" data-editq="${q.id}">Edit</button><button class="btn small ghost" data-delq="${q.id}" aria-label="Delete question">Delete</button></div>
+      </div>`;
   $('#qList').innerHTML = S.sections.map(s => {
-    const qs = S.questions.filter(q => q.sectionId === s.id)
+    const qs = S.questions.filter(q => !q.double && q.sectionId === s.id)
       .sort((a,b) => (a.points - b.points));
     return `<div class="qgroup"><h3><span class="swatch" style="background:${s.color}"></span>${esc(s.name)}</h3>
-      ${qs.length ? qs.map(q => `<div class="qitem ${q.used?'used':''}">
-        <div><div class="pts">${esc(q.points)}</div><div class="diff">${esc(q.difficulty)}${q.used?'<br>answered':''}</div></div>
-        <div><div class="qtext">${esc(q.text)}</div><div class="ans">Answer: ${esc(q.answer)}</div></div>
-        <div class="acts"><button class="btn small" data-editq="${q.id}">Edit</button><button class="btn small ghost" data-delq="${q.id}" aria-label="Delete question">Delete</button></div>
-      </div>`).join('') : '<p class="empty">No questions yet.</p>'}</div>`; }).join('')
+      ${qs.length ? qs.map(q => item(q, esc(q.points))).join('') : '<p class="empty">No questions yet.</p>'}</div>`; }).join('')
+    + (dbls.length ? `<div class="qgroup"><h3><span class="swatch" style="background:#ffc940"></span>Double your points</h3>${dbls.map(q => item(q, '×2')).join('')}</div>` : '')
     || '<p class="empty">Questions you add will be listed here, grouped by section.</p>';
+  document.querySelectorAll('img[data-thumb]').forEach(async el => { const q = S.questions.find(x => x.id === el.dataset.thumb);
+    const src = q && await imgSrc(q); if (src) el.src = src; else el.remove(); });
 }
 
 $('#gTitle').oninput = e => { S.title = e.target.value; $('#brandTitle').textContent = S.title || 'Spin Jeopardy'; save(); };
@@ -454,24 +516,49 @@ $('#setupView').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.delsec){ const s = secById(b.dataset.delsec); const n = S.questions.filter(q => q.sectionId === s.id).length;
     if (!confirm(`Delete "${s.name}"${n ? ` and its ${n} question${n===1?'':'s'}` : ''}?`)) return;
-    S.sections = S.sections.filter(x => x.id !== s.id); S.questions = S.questions.filter(q => q.sectionId !== s.id); save(); renderSetup(); }
+    S.sections = S.sections.filter(x => x.id !== s.id); S.questions.filter(q => q.sectionId === s.id).forEach(q => IMG.del(q.imageId)); S.questions = S.questions.filter(q => q.sectionId !== s.id); save(); renderSetup(); }
   if (b.dataset.delteam){ S.teams = S.teams.filter(t => t.id !== b.dataset.delteam); S.turn = 0; save(); renderSetup(); }
-  if (b.dataset.delq){ if (!confirm('Delete this question?')) return; S.questions = S.questions.filter(q => q.id !== b.dataset.delq); save(); renderSetup(); }
+  if (b.dataset.delq){ if (!confirm('Delete this question?')) return; const dq = S.questions.find(q => q.id === b.dataset.delq); if (dq) IMG.del(dq.imageId); S.questions = S.questions.filter(q => q.id !== b.dataset.delq); save(); renderSetup(); }
   if (b.dataset.editq){ const q = S.questions.find(x => x.id === b.dataset.editq); editingId = q.id;
-    $('#qSec').value = q.sectionId; $('#qDiff').value = q.difficulty; $('#qPts').value = q.points; $('#qText').value = q.text; $('#qAns').value = q.answer;
+    $('#qType').value = q.double ? 'double' : 'regular'; syncType();
+    if (!q.double) $('#qSec').value = q.sectionId; $('#qDiff').value = DIFFS.includes(q.difficulty) ? q.difficulty : 'Medium'; $('#qPts').value = q.points; $('#qText').value = q.text; $('#qAns').value = q.answer; $('#qAr').value = q.arabic || '';
+    $('#qImgUrl').value = q.imageUrl || ''; formImg = q.imageId ? { id:q.imageId } : null;
+    imgSrc(q).then(src => { if (editingId === q.id) showPreview(src); });
     $('#qFormTitle').textContent = 'Edit question'; $('#saveQ').textContent = 'Save changes'; $('#cancelEdit').hidden = false;
     $('#qFormTitle').scrollIntoView({behavior:'smooth', block:'start'}); $('#qText').focus(); }
 });
 $('#qDiff').onchange = () => { $('#qPts').value = DIFF_PTS[$('#qDiff').value]; };
-function resetForm(){ editingId = null; $('#qText').value=''; $('#qAns').value='';
+function syncType(){ const d = $('#qType').value === 'double';
+  $('#qSecWrap').hidden = d; $('#qPtsWrap').hidden = d; $('#qDoubleHint').hidden = !d; }
+$('#qType').onchange = syncType;
+let formImg = null; // {id?, data?} for an uploaded picture
+function showPreview(src){ $('#qImgPrev').hidden = !src; if (src) $('#qImgPrev img').src = src; }
+$('#qImgBtn').onclick = () => $('#qImgFile').click();
+$('#qImgFile').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { const data = await shrinkImage(f); formImg = { data }; $('#qImgUrl').value = ''; showPreview(data); }
+  catch(err){ toast('That file could not be opened as a picture.'); } };
+$('#qImgUrl').oninput = e => { const u = e.target.value.trim(); if (u) { formImg = null; showPreview(u); } else showPreview(null); };
+$('#qImgRemove').onclick = () => { formImg = null; $('#qImgUrl').value = ''; showPreview(null); };
+function resetForm(){ editingId = null; $('#qText').value=''; $('#qAns').value=''; $('#qAr').value=''; $('#qImgUrl').value=''; formImg = null; showPreview(null);
   $('#qFormTitle').textContent = 'Add a question'; $('#saveQ').textContent = 'Add question'; $('#cancelEdit').hidden = true; }
 $('#cancelEdit').onclick = resetForm;
-$('#saveQ').onclick = () => {
-  if (!S.sections.length) { toast('Add a section first.'); return $('#secName').focus(); }
+$('#saveQ').onclick = async () => {
+  const isDouble = $('#qType').value === 'double';
+  if (!isDouble && !S.sections.length) { toast('Add a section first.'); return $('#secName').focus(); }
   const text = $('#qText').value.trim(), answer = $('#qAns').value.trim();
   if (!text) { toast('Write the question first.'); return $('#qText').focus(); }
-  const data = { sectionId:$('#qSec').value, difficulty:$('#qDiff').value, points:Math.max(0, +$('#qPts').value || 0), text, answer };
-  if (editingId){ Object.assign(S.questions.find(q => q.id === editingId), data); toast('Changes saved.'); }
+  const arabic = $('#qAr').value.trim(), imageUrl = $('#qImgUrl').value.trim();
+  let imageId = null;
+  if (!imageUrl && formImg){
+    if (formImg.id) imageId = formImg.id;
+    else { imageId = uid(); try { await IMG.put(imageId, formImg.data); } catch(e){ toast('The picture could not be saved in this browser.'); imageId = null; } }
+  }
+  const pic = { arabic, imageUrl, imageId };
+  const data = isDouble ? { double:true, sectionId:null, difficulty:$('#qDiff').value, points:0, text, answer, ...pic }
+    : { double:false, sectionId:$('#qSec').value, difficulty:$('#qDiff').value, points:Math.max(0, +$('#qPts').value || 0), text, answer, ...pic };
+  if (editingId){ const q = S.questions.find(q => q.id === editingId);
+    if (q.imageId && q.imageId !== imageId) IMG.del(q.imageId);
+    Object.assign(q, data); toast('Changes saved.'); }
   else { S.questions.push({ id:uid(), used:false, ...data }); toast('Question added.'); }
   save(); resetForm(); renderSetup(); $('#qText').focus();
 };
@@ -486,18 +573,21 @@ function parseCSVLine(line){
 $('#csvBtn').onclick = () => {
   const lines = $('#csvIn').value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   let added = 0, skipped = 0;
-  lines.forEach(l => { const [sec, text, answer='', diffRaw='Medium', ptsRaw] = parseCSVLine(l);
+  lines.forEach(l => { const [sec, text, answer='', diffRaw='Medium', ptsRaw, arabic='', imageUrl=''] = parseCSVLine(l);
     if (!sec || !text || /^section$/i.test(sec)) { skipped++; return; }
-    const d = ['Easy','Medium','Hard'].find(x => x.toLowerCase() === diffRaw.toLowerCase()) || 'Medium';
+    const d = DIFFS.find(x => x.toLowerCase() === diffRaw.toLowerCase().replace(/\s+/g,' ')) || 'Medium';
+    if (/^double/i.test(sec)){ S.questions.push({ id:uid(), double:true, sectionId:null, text, answer, arabic, imageUrl, imageId:null, difficulty:d, points:0, used:false }); added++; return; }
     const s = addSection(sec); const pts = ptsRaw !== undefined && ptsRaw !== '' && !isNaN(+ptsRaw) ? +ptsRaw : DIFF_PTS[d];
-    S.questions.push({ id:uid(), sectionId:s.id, text, answer, difficulty:d, points:pts, used:false }); added++; });
+    S.questions.push({ id:uid(), sectionId:s.id, text, answer, arabic, imageUrl, imageId:null, difficulty:d, points:pts, used:false }); added++; });
   save(); renderSetup();
   if (added) $('#csvIn').value = '';
   toast(added ? `Added ${added} question${added===1?'':'s'}${skipped?`, skipped ${skipped} line${skipped===1?'':'s'}`:''}.` : 'No lines matched the format Section, Question, Answer, Difficulty, Points.');
 };
 
-$('#exportBtn').onclick = () => {
-  const blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
+$('#exportBtn').onclick = async () => {
+  const images = {};
+  for (const q of S.questions) if (q.imageId){ const d = await IMG.get(q.imageId); if (d) images[q.imageId] = d; }
+  const blob = new Blob([JSON.stringify({ ...S, images }, null, 2)], {type:'application/json'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = (S.title || 'game').replace(/[^\w-]+/g,'-').toLowerCase() + '.json'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -506,12 +596,14 @@ $('#importBtn').onclick = () => $('#importFile').click();
 $('#importFile').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   try { const d = JSON.parse(await f.text()); if (!Array.isArray(d.questions)) throw 0;
-    S = normalize(d); save(); renderSetup(); toast('Game imported.'); }
+    await IMG.clear();
+    if (d.images && typeof d.images === 'object') for (const [id, data] of Object.entries(d.images)) await IMG.put(id, data);
+    delete d.images; S = normalize(d); save(); resetForm(); renderSetup(); toast('Game imported.'); }
   catch(err){ toast('That file is not a Spin Jeopardy game file.'); }
   e.target.value = '';
 };
-$('#sampleBtn').onclick = () => { if (!confirm('Replace the current game with the sample game?')) return; S = sampleState(); save(); resetForm(); renderSetup(); };
-$('#clearBtn').onclick = () => { if (!confirm('Delete all sections, questions and players and start blank?')) return; S = blankState(); save(); resetForm(); renderSetup(); };
+$('#sampleBtn').onclick = () => { if (!confirm('Replace the current game with the sample game?')) return; IMG.clear(); S = sampleState(); save(); resetForm(); renderSetup(); };
+$('#clearBtn').onclick = () => { if (!confirm('Delete all sections, questions and players and start blank?')) return; IMG.clear(); S = blankState(); save(); resetForm(); renderSetup(); };
 
 /* ================= PLAY ================= */
 const canvas = $('#wheel'), ctx = canvas.getContext('2d');
@@ -519,18 +611,28 @@ let rot = 0, spinning = false, bulbPhase = 0;
 
 function segments(){
   const remove = S.settings.usedMode === 'remove';
+  if (!S.questions.length) return [];
+  const regular = S.questions.filter(q => !q.double);
+  let base;
   if (S.settings.wheelMode === 'sections'){
-    return S.sections.map(s => { const open = S.questions.filter(q => q.sectionId === s.id && !q.used).length;
-      const all = S.questions.filter(q => q.sectionId === s.id).length;
+    base = S.sections.map(s => { const open = regular.filter(q => q.sectionId === s.id && !q.used).length;
+      const all = regular.filter(q => q.sectionId === s.id).length;
       return { kind:'section', section:s, used: open === 0, label:s.name, sub:`${open} left`, color:s.color, has:all>0 }; })
       .filter(g => g.has && (!remove || !g.used));
+  } else {
+    // interleave sections so neighbouring slices differ
+    const bySec = S.sections.map(s => regular.filter(q => q.sectionId === s.id && (!remove || !q.used)).sort((a,b)=>a.points-b.points));
+    const out = []; let i = 0, more = true;
+    while (more){ more = false; bySec.forEach(list => { if (list[i]){ more = true; out.push(list[i]); } }); i++; }
+    base = out.map(q => { const s = secById(q.sectionId);
+      return { kind:'question', q, used:q.used, label:String(q.points), sub:s ? s.name : '', color:s ? s.color : '#888' }; });
   }
-  // interleave sections so neighbouring slices differ
-  const bySec = S.sections.map(s => S.questions.filter(q => q.sectionId === s.id && (!remove || !q.used)).sort((a,b)=>a.points-b.points));
-  const out = []; let i = 0, more = true;
-  while (more){ more = false; bySec.forEach(list => { if (list[i]){ more = true; out.push(list[i]); } }); i++; }
-  return out.map(q => { const s = secById(q.sectionId);
-    return { kind:'question', q, used:q.used, label:String(q.points), sub:s ? s.name : '', color:s ? s.color : '#888' }; });
+  // spread "Double your points" slices evenly around the wheel
+  const dbl = S.questions.filter(q => q.double).map(q => ({ kind:'double', q, used:q.used, label:'×2', sub:'Double', color:'#ffc940' }))
+    .filter(g => !remove || !g.used);
+  const n = base.length;
+  dbl.forEach((g, k) => base.splice(Math.round((k + 1) * n / (dbl.length + 1)) + k, 0, g));
+  return base;
 }
 
 function sizeCanvas(){
@@ -564,7 +666,7 @@ function draw(){
 
   if (!segs.length){
     ctx.beginPath(); ctx.arc(c, c, r, 0, Math.PI * 2); ctx.fillStyle = '#17237a'; ctx.fill();
-    ctx.fillStyle = '#aeb6ea'; ctx.font = `600 ${Math.max(13, size*0.035)}px Figtree, sans-serif`; ctx.textAlign = 'center';
+    ctx.fillStyle = '#aeb6ea'; ctx.font = `600 ${Math.max(13, size*0.035)}px Figtree, 'Noto Nastaliq Urdu', sans-serif`; ctx.textAlign = 'center';
     ctx.fillText(S.questions.length ? 'Every question has been answered' : 'Add questions in Setup', c, c + size * 0.2);
     return;
   }
@@ -582,14 +684,14 @@ function draw(){
     ctx.fillStyle = fg;
     const chord = arc * r * 0.62; // usable height near rim
     const edge = r - size * 0.03;
-    if (g.kind === 'question'){
+    if (g.kind !== 'section'){
       const fs = Math.min(size * 0.055, chord * 0.62, 40);
       ctx.font = `${fs}px Bungee, Impact, sans-serif`;
       ctx.fillText(g.label, k * edge, 0);
       const pw = ctx.measureText(g.label).width;
       const sfs = Math.min(size * 0.028, chord * 0.5, 18);
       if (sfs >= 8){
-        ctx.font = `600 ${sfs}px Figtree, sans-serif`; ctx.globalAlpha = 0.9;
+        ctx.font = `600 ${sfs}px Figtree, 'Noto Nastaliq Urdu', sans-serif`; ctx.globalAlpha = 0.9;
         const inner = edge - pw - size * 0.02, maxW = inner - r * 0.28;
         if (maxW > 20) ctx.fillText(fitText(g.sub, maxW), k * inner, 0);
       }
@@ -599,7 +701,7 @@ function draw(){
       const fs = Math.min(size * 0.04, chord * 0.42, 30);
       ctx.font = `${fs}px Bungee, Impact, sans-serif`;
       ctx.fillText(fitText(g.label, r * 0.66), k * edge, -fs * 0.35);
-      ctx.font = `600 ${fs * 0.55}px Figtree, sans-serif`;
+      ctx.font = `600 ${fs * 0.55}px Figtree, 'Noto Nastaliq Urdu', sans-serif`;
       ctx.fillText(g.sub, k * edge, fs * 0.6);
     }
     ctx.restore();
@@ -767,7 +869,8 @@ function spin(){
       const g = segs[target];
       setTimeout(() => {
         if (g.kind === 'question') openQuestion(g.q);
-        else { const open = S.questions.filter(q => q.sectionId === g.section.id && !q.used);
+        else if (g.kind === 'double') openQuestion(g.q);
+        else { const open = S.questions.filter(q => !q.double && q.sectionId === g.section.id && !q.used);
           openQuestion(open[Math.floor(Math.random() * open.length)]); }
       }, 450);
     }
@@ -792,9 +895,12 @@ function renderPlay(){
       <button data-adj="${t.id}" data-by="-100" aria-label="Take 100 from ${esc(t.name)}">−</button></span></div>`).join('')
     || '<p class="empty">No players yet.</p>';
   const secsWithQ = S.sections.filter(s => S.questions.some(q => q.sectionId === s.id));
-  $('#legend').innerHTML = S.settings.wheelMode === 'questions' ? secsWithQ.map(s => `<span><i class="swatch" style="background:${s.color}"></i>${esc(s.name)}</span>`).join('') : '';
+  $('#legend').innerHTML = (S.settings.wheelMode === 'questions' ? secsWithQ.map(s => `<span><i class="swatch" style="background:${s.color}"></i>${esc(s.name)}</span>`).join('') : '')
+    + (S.questions.some(q => q.double) ? `<span><i class="swatch" style="background:#ffc940"></i>Double your points</span>` : '');
   const open = S.questions.filter(q => !q.used).length;
-  $('#progress').textContent = S.questions.length ? `${open} of ${S.questions.length} questions left` : '';
+  const regQ = S.questions.filter(q => !q.double), dblQ = S.questions.filter(q => q.double);
+  const rLeft = regQ.filter(q => !q.used).length, dLeft = dblQ.filter(q => !q.used).length;
+  $('#progress').textContent = S.questions.length ? `${rLeft} of ${regQ.length} questions left` + (dblQ.length ? `, ${dLeft} Double slice${dLeft===1?'':'s'} left` : '') : '';
   draw();
 }
 $('#scoreList').addEventListener('click', e => {
@@ -808,14 +914,17 @@ $('#rulesBtn').onclick = () => { $('#rulesText').textContent = S.rules || 'No ru
 $('#rulesClose').onclick = () => $('#rulesDialog').close();
 
 /* question dialog */
-let activeQ = null, timerId = null, timeLeft = 0, paused = false, resolved = false;
+let activeDouble = false, activeQ = null, timerId = null, timeLeft = 0, paused = false, resolved = false;
 function openQuestion(q){
   if (!q) return;
-  activeQ = q; resolved = false;
+  activeQ = q; activeDouble = !!q.double; resolved = false;
   const s = secById(q.sectionId);
-  const tag = $('#qdSec'); tag.textContent = s ? s.name : ''; tag.style.background = s ? s.color : '#888'; tag.style.color = s ? textOn(s.color) : '#fff';
-  $('#qdDiff').textContent = q.difficulty; $('#qdPts').textContent = q.points;
+  const tag = $('#qdSec'); tag.hidden = !s; tag.textContent = s ? s.name : ''; tag.style.background = s ? s.color : '#888'; tag.style.color = s ? textOn(s.color) : '#fff';
+  $('#qdDiff').textContent = q.difficulty; $('#qdPts').textContent = activeDouble ? '×2' : q.points; $('#qdDouble').hidden = !activeDouble;
   $('#qdBody').textContent = q.text;
+  $('#qdAr').textContent = q.arabic || ''; $('#qdAr').hidden = !q.arabic;
+  const im = $('#qdImg'); im.hidden = true; im.classList.remove('zoom'); im.removeAttribute('src');
+  imgSrc(q).then(src => { if (src && activeQ === q){ im.src = src; im.hidden = false; } });
   $('#qdAnsText').textContent = q.answer || '(no answer entered)';
   $('#qdAnswer').hidden = true; $('#qdReveal').hidden = false;
   renderAward();
@@ -835,27 +944,33 @@ function updateTimer(instant){
 }
 $('#qdPause').onclick = () => { paused = !paused; $('#qdPause').textContent = paused ? 'Resume' : 'Pause';
   if (paused) Suspense.stop(); else if ($('#qdAnswer').hidden && timeLeft > 0) Suspense.start(); };
+const doubled = n => n > 0 ? n * 2 : n;
+const halved = n => n > 0 ? Math.round(n / 2) : n;
 function renderAward(){
   if (!S.teams.length){ $('#qdAward').innerHTML = ''; return; }
   const t = S.teams[S.turn % S.teams.length];
+  const right = activeDouble ? `Correct: ${t.score} → ${doubled(t.score)}` : `Correct +${activeQ.points}`;
+  const wrong = activeDouble ? `Wrong: ${t.score} → ${halved(t.score)}` : `Wrong${S.settings.deductWrong ? ' −' + activeQ.points : ''}`;
   $('#qdAward').innerHTML = `<div class="arow"><span>${esc(t.name)}</span>
-    <button class="btn small good" data-right="${t.id}">Correct +${activeQ.points}</button>
-    <button class="btn small bad" data-wrong="${t.id}">Wrong${S.settings.deductWrong ? ' −' + activeQ.points : ''}</button></div>`;
+    <button class="btn small good" data-right="${t.id}">${right}</button>
+    <button class="btn small bad" data-wrong="${t.id}">${wrong}</button></div>`;
 }
 $('#qdReveal').onclick = () => { Suspense.stop(); $('#qdAnswer').hidden = false; $('#qdReveal').hidden = true; paused = true; $('#qdPause').textContent = 'Resume'; };
 $('#qdAward').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || !activeQ) return;
-  if (b.dataset.right){ const t = S.teams.find(x => x.id === b.dataset.right); t.score += +activeQ.points;
-    toast(`${t.name} +${activeQ.points}`); Suspense.stop(); applause(); finishQuestion(true); }
+  if (b.dataset.right){ const t = S.teams.find(x => x.id === b.dataset.right);
+    if (activeDouble){ t.score = doubled(t.score); toast(`${t.name} doubled to ${t.score}`); }
+    else { t.score += +activeQ.points; toast(`${t.name} +${activeQ.points}`); } Suspense.stop(); applause(); finishQuestion(true); }
   if (b.dataset.wrong){ const t = S.teams.find(x => x.id === b.dataset.wrong); Suspense.stop(); clearInterval(timerId); boo();
-    if (S.settings.deductWrong){ t.score -= +activeQ.points; toast(`${t.name} −${activeQ.points}`); } else toast(`${t.name}: wrong`);
+    if (activeDouble){ t.score = halved(t.score); toast(`${t.name} halved to ${t.score}`); }
+    else if (S.settings.deductWrong){ t.score -= +activeQ.points; toast(`${t.name} −${activeQ.points}`); } else toast(`${t.name}: wrong`);
     b.disabled = true; b.previousElementSibling.disabled = true; save(); renderPlay(); }
 });
 function finishQuestion(markUsed){
   if (resolved) return; resolved = true;
   clearInterval(timerId); Suspense.stop();
   if (activeQ && markUsed){ activeQ.used = true; if (S.teams.length) S.turn = (S.turn + 1) % S.teams.length; }
-  activeQ = null; save();
+  activeQ = null; activeDouble = false; save();
   if ($('#qDialog').open) $('#qDialog').close();
   renderPlay();
   if (markUsed && !S.questions.some(q => !q.used) && S.questions.length) showWinner();
@@ -873,6 +988,8 @@ function showWinner(){
   $('#rulesDialog').showModal();
   $('#rulesDialog').addEventListener('close', () => $('#rulesHead').textContent = 'Rules', { once:true });
 }
+
+$('#qdImg').onclick = e => e.target.classList.toggle('zoom');
 
 /* init */
 save(); renderSetup();

@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Spin Jeopardy</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#101a5c; --navy-2:#17237a; --navy-3:#1f2e96; --line:#2d3ca8;
+  --gold:#ffc940; --gold-dim:#b8892a; --ink:#ffffff; --muted:#aeb6ea;
+  --good:#2ec4b6; --bad:#ff5c5c; --used:#373c63;
+  --display:'Bungee', 'Impact', 'Arial Black', sans-serif;
+  --body:'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme:dark;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--navy);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+  background-image:radial-gradient(circle at 50% -20%, #22319e 0%, transparent 60%);min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* Top bar */
+.bar{display:flex;align-items:center;gap:1rem;padding:.9rem 1.25rem;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{font-family:var(--display);font-size:1.35rem;letter-spacing:.02em;color:var(--gold);margin:0;flex:1;min-width:10rem;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tabs{display:flex;background:var(--navy-2);border-radius:999px;padding:4px}
+.tabs button{border:0;background:transparent;padding:.45rem 1.1rem;border-radius:999px;cursor:pointer;font-weight:600;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--gold);color:var(--navy)}
+
+main{max-width:1200px;margin:0 auto;padding:1.25rem}
+[hidden]{display:none!important}
+
+/* Buttons & inputs */
+.btn{border:0;border-radius:10px;padding:.6rem 1rem;font-weight:700;cursor:pointer;background:var(--navy-3);color:var(--ink)}
+.btn:hover{background:var(--line)}
+.btn.primary{background:var(--gold);color:var(--navy)}
+.btn.primary:hover{background:#ffd66e}
+.btn.good{background:var(--good);color:#06302c}
+.btn.bad{background:var(--bad);color:#3a0909}
+.btn.ghost{background:transparent;border:1px solid var(--line)}
+.btn.small{padding:.3rem .6rem;font-size:.85rem;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+label{display:block;font-weight:600;font-size:.9rem;margin-bottom:.3rem;color:var(--muted)}
+input[type=text],input[type=number],select,textarea{width:100%;background:var(--navy);border:1px solid var(--line);border-radius:10px;padding:.55rem .7rem}
+textarea{resize:vertical;min-height:5rem}
+.row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end}
+.row>*{flex:1;min-width:8rem}
+.row>.shrink{flex:0 0 auto;min-width:0}
+
+/* Setup layout */
+.setup{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:1.25rem}
+.panel{background:var(--navy-2);border:1px solid var(--line);border-radius:16px;padding:1.1rem 1.2rem;margin-bottom:1.25rem}
+.panel h2{font-family:var(--display);font-size:1.05rem;font-weight:400;margin:0 0 .25rem;color:var(--gold)}
+.panel p.hint{margin:0 0 .9rem;color:var(--muted);font-size:.92rem}
+.stack>*+*{margin-top:.8rem}
+.chiplist{list-style:none;margin:.8rem 0 0;padding:0;display:flex;flex-direction:column;gap:.45rem}
+.chiplist li{display:flex;align-items:center;gap:.6rem;background:var(--navy);border-radius:10px;padding:.4rem .5rem .4rem .7rem}
+.swatch{width:14px;height:14px;border-radius:4px;flex:0 0 auto}
+.chiplist input{border:0;background:transparent;padding:.2rem;flex:1}
+.chiplist .count{color:var(--muted);font-size:.85rem;white-space:nowrap}
+.qgroup{margin-top:1rem}
+.qgroup h3{display:flex;align-items:center;gap:.5rem;font-size:1rem;margin:0 0 .4rem}
+.qitem{display:grid;grid-template-columns:4.2rem 1fr auto;gap:.7rem;align-items:start;background:var(--navy);border-radius:10px;padding:.55rem .7rem;margin-bottom:.4rem}
+.qitem .pts{font-family:var(--display);color:var(--gold)}
+.qitem .diff{font-size:.78rem;color:var(--muted)}
+.qitem .qtext{overflow-wrap:anywhere}
+.qitem .ans{color:var(--muted);font-size:.88rem}
+.qitem.used{opacity:.5}
+.qitem .acts{display:flex;gap:.3rem}
+.empty{color:var(--muted);font-style:italic;margin:.6rem 0 0}
+.toggle{display:flex;align-items:center;gap:.6rem;font-weight:600;color:var(--ink);cursor:pointer}
+.toggle input{width:1.1rem;height:1.1rem;accent-color:var(--gold)}
+fieldset{border:0;padding:0;margin:0}
+.radio{display:flex;gap:.5rem;align-items:flex-start;margin:.35rem 0;cursor:pointer;color:var(--ink);font-weight:400}
+.radio input{margin-top:.3rem;accent-color:var(--gold)}
+.radio small{display:block;color:var(--muted)}
+
+/* Play layout */
+.play{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:1.5rem;align-items:start}
+.stage{display:flex;flex-direction:column;align-items:center;gap:1rem}
+.turn{font-size:1.1rem;color:var(--muted);text-align:center;min-height:1.6em}
+.turn strong{color:var(--ink)}
+.wheelwrap{position:relative;width:min(100%, 620px, 72vh);aspect-ratio:1}
+#wheel{width:100%;height:100%;display:block}
+.pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;
+  border-left:20px solid transparent;border-right:20px solid transparent;border-top:38px solid var(--gold);
+  filter:drop-shadow(0 3px 0 rgba(0,0,0,.35));z-index:2}
+#spinBtn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:23%;aspect-ratio:1;border-radius:50%;
+  border:5px solid var(--gold);background:var(--navy);color:var(--gold);font-family:var(--display);font-size:clamp(.9rem,2.6vw,1.5rem);
+  cursor:pointer;box-shadow:0 0 0 6px var(--navy)}
+#spinBtn:hover:not(:disabled){background:var(--navy-3)}
+#spinBtn:disabled{cursor:wait;opacity:.9}
+.stagefoot{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;align-items:center;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem .9rem;justify-content:center;font-size:.9rem}
+.legend span{display:inline-flex;align-items:center;gap:.35rem}
+
+.board h2{font-family:var(--display);font-weight:400;color:var(--gold);font-size:1.2rem;margin:0 0 .75rem}
+.team{display:flex;align-items:center;gap:.75rem;padding:.8rem 1rem;border-radius:14px;background:var(--navy-2);border:2px solid transparent;margin-bottom:.6rem}
+.team.active{border-color:var(--gold)}
+.team .name{flex:1;font-weight:800;font-size:1.1rem;overflow-wrap:anywhere}
+.team .score{font-family:var(--display);font-size:1.7rem;min-width:4ch;text-align:right;font-variant-numeric:tabular-nums}
+.team .score.neg{color:var(--bad)}
+.team .adj{display:flex;flex-direction:column;gap:.2rem}
+.team .adj button{border:0;background:var(--navy);border-radius:6px;width:1.9rem;height:1.5rem;cursor:pointer;font-weight:800;line-height:1}
+.boardfoot{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
+
+/* Dialogs */
+dialog{border:0;padding:0;background:transparent;color:var(--ink);max-width:min(760px, 94vw);width:100%}
+dialog::backdrop{background:rgba(5,9,40,.82)}
+.card{background:var(--navy-2);border:3px solid var(--gold);border-radius:20px;padding:1.5rem 1.6rem;max-height:90vh;overflow:auto}
+.qmeta{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+.tag{padding:.25rem .7rem;border-radius:999px;font-weight:800;font-size:.9rem}
+.qpoints{font-family:var(--display);color:var(--gold);font-size:1.4rem;margin-left:auto}
+.qbody{font-size:clamp(1.3rem,3.2vw,2rem);font-weight:800;line-height:1.3;margin:0 0 1.2rem;overflow-wrap:anywhere}
+.timer{height:10px;background:var(--navy);border-radius:99px;overflow:hidden;margin-bottom:.4rem}
+.timer i{display:block;height:100%;background:var(--gold);width:100%;transition:width 1s linear}
+.timer.low i{background:var(--bad)}
+.timertext{font-size:.9rem;color:var(--muted);margin-bottom:1rem;display:flex;justify-content:space-between;gap:1rem}
+.answer{background:var(--navy);border-radius:12px;padding:.9rem 1rem;margin-bottom:1rem;font-size:1.2rem}
+.answer b{color:var(--good)}
+.award{display:flex;flex-direction:column;gap:.45rem;margin:1rem 0}
+.award .arow{display:flex;align-items:center;gap:.5rem;background:var(--navy);border-radius:10px;padding:.45rem .6rem}
+.award .arow span{flex:1;font-weight:700}
+.award .arow.current span::after{content:'  (their turn)';color:var(--gold);font-weight:400;font-size:.85rem}
+.qfoot{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+.rulestext{white-space:pre-wrap;font-size:1.05rem}
+
+.toast{position:fixed;left:50%;bottom:calc(1.2rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--gold);color:var(--navy);
+  padding:.6rem 1.1rem;border-radius:10px;font-weight:700;z-index:50;max-width:90vw}
+
+@media (max-width:860px){
+  .setup,.play{grid-template-columns:1fr}
+  main{padding:1rem}
+}
+@media (prefers-reduced-motion:reduce){ .timer i{transition:none} }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <h1 class="brand" id="brandTitle">Spin Jeopardy</h1>
+  <div class="tabs" role="tablist" aria-label="Mode">
+    <button role="tab" id="tabSetup" aria-selected="true" aria-controls="setupView">Setup</button>
+    <button role="tab" id="tabPlay" aria-selected="false" aria-controls="playView">Play</button>
+  </div>
+</header>
+
+<main>
+<!-- ============ SETUP ============ -->
+<section id="setupView" class="setup" role="tabpanel" aria-labelledby="tabSetup">
+  <div>
+    <div class="panel stack">
+      <h2>Game</h2>
+      <div><label for="gTitle">Game title</label><input type="text" id="gTitle" maxlength="60"></div>
+      <div><label for="gRules">Rules shown to players</label><textarea id="gRules" rows="6"></textarea></div>
+    </div>
+
+    <div class="panel">
+      <h2>Sections</h2>
+      <p class="hint">Each section gets its own colour on the wheel.</p>
+      <div class="row">
+        <div><label for="secName">New section name</label><input type="text" id="secName" maxlength="40"></div>
+        <button class="btn primary shrink" id="addSec">Add section</button>
+      </div>
+      <ul class="chiplist" id="secList"></ul>
+    </div>
+
+    <div class="panel">
+      <h2>Players or teams</h2>
+      <div class="row">
+        <div><label for="teamName">Name</label><input type="text" id="teamName" maxlength="30"></div>
+        <button class="btn primary shrink" id="addTeam">Add</button>
+      </div>
+      <ul class="chiplist" id="teamList"></ul>
+    </div>
+
+    <div class="panel stack">
+      <h2>Options</h2>
+      <fieldset>
+        <label>What the wheel is made of</label>
+        <label class="radio"><input type="radio" name="wheelMode" value="questions"> <span>Every question is a slice<small>The slice decides section, question and points in one spin.</small></span></label>
+        <label class="radio"><input type="radio" name="wheelMode" value="sections"> <span>Every section is a slice<small>The spin picks a section, then a random unanswered question from it.</small></span></label>
+      </fieldset>
+      <fieldset>
+        <label>After a question is answered</label>
+        <label class="radio"><input type="radio" name="usedMode" value="gray"> <span>Keep it on the wheel, greyed out<small>The wheel never stops on a grey slice; it lands on another open one.</small></span></label>
+        <label class="radio"><input type="radio" name="usedMode" value="remove"> <span>Remove it from the wheel<small>The wheel shrinks as the game goes on.</small></span></label>
+      </fieldset>
+      <div class="row">
+        <div><label for="optTimer">Answer timer (seconds, 0 = off)</label><input type="number" id="optTimer" min="0" max="600"></div>
+        <div><label for="optSpin">Spin length (seconds)</label><input type="number" id="optSpin" min="2" max="15"></div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="optDeduct"> Wrong answers lose the question's points</label>
+      <label class="toggle"><input type="checkbox" id="optSound"> Wheel tick sound</label>
+    </div>
+
+    <div class="panel stack">
+      <h2>Save and load</h2>
+      <p class="hint">Everything saves automatically in this browser. Export a file to move the game to another device.</p>
+      <div class="row">
+        <button class="btn" id="exportBtn">Export game file</button>
+        <button class="btn" id="importBtn">Import game file</button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+      </div>
+      <div class="row">
+        <button class="btn ghost" id="sampleBtn">Load sample game</button>
+        <button class="btn ghost" id="clearBtn">Start a blank game</button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel stack">
+      <h2 id="qFormTitle">Add a question</h2>
+      <div class="row">
+        <div><label for="qSec">Section</label><select id="qSec"></select></div>
+        <div><label for="qDiff">Difficulty</label>
+          <select id="qDiff"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></div>
+        <div><label for="qPts">Points</label><input type="number" id="qPts" step="50" min="0"></div>
+      </div>
+      <div><label for="qText">Question</label><textarea id="qText" rows="3"></textarea></div>
+      <div><label for="qAns">Answer</label><input type="text" id="qAns"></div>
+      <div class="row">
+        <button class="btn primary shrink" id="saveQ">Add question</button>
+        <button class="btn ghost shrink" id="cancelEdit" hidden>Cancel edit</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Paste many questions</h2>
+      <p class="hint">One per line: Section, Question, Answer, Difficulty, Points. Use quotes around text that contains commas. New sections are created automatically.</p>
+      <textarea id="csvIn" rows="4" placeholder='Science, "Which planet is known as the Red Planet?", Mars, Easy, 100'></textarea>
+      <div class="row" style="margin-top:.6rem"><button class="btn shrink" id="csvBtn">Add these questions</button></div>
+    </div>
+
+    <div class="panel">
+      <h2>All questions</h2>
+      <p class="hint" id="qSummary"></p>
+      <div id="qList"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PLAY ============ -->
+<section id="playView" class="play" role="tabpanel" aria-labelledby="tabPlay" hidden>
+  <div class="stage">
+    <div class="turn" id="turnText" aria-live="polite"></div>
+    <div class="wheelwrap">
+      <div class="pointer" aria-hidden="true"></div>
+      <canvas id="wheel" role="img" aria-label="Game wheel"></canvas>
+      <button id="spinBtn">Spin</button>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="stagefoot"><span id="progress"></span></div>
+  </div>
+
+  <aside class="board">
+    <h2>Scores</h2>
+    <div id="scoreList"></div>
+    <div class="boardfoot">
+      <button class="btn" id="rulesBtn">Show rules</button>
+      <button class="btn ghost" id="skipTurn">Next player's turn</button>
+      <button class="btn ghost" id="resetBoard">Reset board and scores</button>
+    </div>
+  </aside>
+</section>
+</main>
+
+<!-- Question dialog -->
+<dialog id="qDialog" aria-labelledby="qdBody">
+  <div class="card">
+    <div class="qmeta">
+      <span class="tag" id="qdSec"></span>
+      <span class="tag" id="qdDiff" style="background:var(--navy);color:var(--muted)"></span>
+      <span class="qpoints" id="qdPts"></span>
+    </div>
+    <p class="qbody" id="qdBody"></p>
+    <div id="qdTimerWrap">
+      <div class="timer" id="qdTimer"><i></i></div>
+      <div class="timertext"><span id="qdTimeText"></span><button class="btn small ghost" id="qdPause">Pause</button></div>
+    </div>
+    <div class="answer" id="qdAnswer" hidden>Answer: <b id="qdAnsText"></b></div>
+    <button class="btn" id="qdReveal">Show answer</button>
+    <div class="award" id="qdAward"></div>
+    <div class="qfoot">
+      <button class="btn ghost" id="qdPutBack">Put back on wheel</button>
+      <button class="btn primary" id="qdDone">Nobody scored, close</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="rulesDialog" aria-labelledby="rulesHead">
+  <div class="card">
+    <h2 id="rulesHead" style="font-family:var(--display);font-weight:400;color:var(--gold);margin-top:0">Rules</h2>
+    <div class="rulestext" id="rulesText"></div>
+    <div class="qfoot" style="margin-top:1.2rem"><button class="btn primary" id="rulesClose">Got it</button></div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+'use strict';
+const LS = 'spinJeopardy.v1';
+const PALETTE = ['#E4572E','#29B6F6','#8BC34A','#AB47BC','#FFB300','#26A69A','#EC407A','#7E8CE0','#FF8A50','#C0CA33','#4DD0E1','#F06292'];
+const DIFF_PTS = { Easy:100, Medium:200, Hard:300 };
+const $ = s => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2, 10);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const DEFAULT_RULES =
+`1. Players take turns spinning the wheel.
+2. The slice the wheel stops on decides the section, the question and the points.
+3. The player whose turn it is answers first. If they get it wrong, others may try.
+4. A correct answer wins the points. A wrong answer loses them (if the host turned that on).
+5. Answered questions are greyed out and the wheel will not stop on them again.
+6. Highest score when every question is answered wins.`;
+
+function blankState(){
+  return { title:'Spin Jeopardy', rules:DEFAULT_RULES,
+    settings:{ wheelMode:'questions', usedMode:'gray', timer:30, spinSeconds:5, deductWrong:true, sound:true },
+    sections:[], questions:[], teams:[], turn:0 };
+}
+function sampleState(){
+  const s = blankState(); s.title = 'Family Quiz Night';
+  const add = (name, qs) => { const id = uid(); s.sections.push({id, name, color:PALETTE[s.sections.length % PALETTE.length]});
+    qs.forEach(([t,a,d]) => s.questions.push({id:uid(), sectionId:id, text:t, answer:a, difficulty:d, points:DIFF_PTS[d], used:false})); };
+  add('Geography', [['What is the capital of Canada?','Ottawa','Easy'],['Which river is the longest in the world?','The Nile (some measures say the Amazon)','Medium'],['Which country has the most natural lakes?','Canada','Hard']]);
+  add('Science', [['Which planet is known as the Red Planet?','Mars','Easy'],['What gas do plants absorb from the air?','Carbon dioxide','Medium'],['What is the chemical symbol for gold?','Au','Hard']]);
+  add('Food', [['Which fruit is dried to make raisins?','Grapes','Easy'],['Saffron comes from which part of a flower?','The stigma','Medium'],['Which country is the origin of the dish biryani most often credited to?','India / South Asia (with Persian roots)','Hard']]);
+  add('Numbers', [['How many days are in a leap year?','366','Easy'],['How many sides does a hexagon have?','Six','Medium'],['What is 15% of 200?','30','Hard']]);
+  s.teams = [{id:uid(), name:'Team A', score:0},{id:uid(), name:'Team B', score:0}];
+  return s;
+}
+
+function load(){
+  try { const raw = localStorage.getItem(LS); if (!raw) return null;
+    const d = JSON.parse(raw); return normalize(d); } catch(e){ return null; }
+}
+function normalize(d){
+  const b = blankState();
+  if (!d || typeof d !== 'object') return b;
+  return { ...b, ...d, settings:{ ...b.settings, ...(d.settings||{}) },
+    sections:Array.isArray(d.sections)?d.sections:[], questions:Array.isArray(d.questions)?d.questions:[],
+    teams:Array.isArray(d.teams)?d.teams:[], turn:Number(d.turn)||0 };
+}
+let S = load() || sampleState();
+function save(){ try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){} }
+
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2600); }
+const secById = id => S.sections.find(s => s.id === id);
+function textOn(hex){ const n = parseInt(hex.slice(1),16); const r=n>>16,g=(n>>8)&255,b=n&255;
+  return (0.299*r+0.587*g+0.114*b) > 150 ? '#101a5c' : '#ffffff'; }
+
+/* ================= TABS ================= */
+function showTab(which){
+  const play = which === 'play';
+  $('#tabSetup').setAttribute('aria-selected', !play); $('#tabPlay').setAttribute('aria-selected', play);
+  $('#setupView').hidden = play; $('#playView').hidden = !play;
+  if (play){ renderPlay(); requestAnimationFrame(sizeCanvas); } else renderSetup();
+}
+$('#tabSetup').onclick = () => showTab('setup');
+$('#tabPlay').onclick = () => showTab('play');
+
+/* ================= SETUP ================= */
+let editingId = null;
+function renderSetup(){
+  $('#brandTitle').textContent = S.title || 'Spin Jeopardy';
+  $('#gTitle').value = S.title; $('#gRules').value = S.rules;
+  document.querySelectorAll('input[name=wheelMode]').forEach(r => r.checked = r.value === S.settings.wheelMode);
+  document.querySelectorAll('input[name=usedMode]').forEach(r => r.checked = r.value === S.settings.usedMode);
+  $('#optTimer').value = S.settings.timer; $('#optSpin').value = S.settings.spinSeconds;
+  $('#optDeduct').checked = S.settings.deductWrong; $('#optSound').checked = S.settings.sound;
+
+  $('#secList').innerHTML = S.sections.length ? S.sections.map(s => {
+    const n = S.questions.filter(q => q.sectionId === s.id).length;
+    return `<li><span class="swatch" style="background:${s.color}"></span>
+      <input type="text" data-rename="${s.id}" value="${esc(s.name)}" aria-label="Section name">
+      <span class="count">${n} question${n===1?'':'s'}</span>
+      <button class="btn small ghost" data-delsec="${s.id}" aria-label="Delete ${esc(s.name)}">Delete</button></li>`; }).join('')
+    : '<li class="empty">Add at least one section to start writing questions.</li>';
+
+  $('#teamList').innerHTML = S.teams.length ? S.teams.map(t =>
+    `<li><input type="text" data-teamname="${t.id}" value="${esc(t.name)}" aria-label="Team name">
+      <button class="btn small ghost" data-delteam="${t.id}">Remove</button></li>`).join('')
+    : '<li class="empty">Add players or teams to keep score.</li>';
+
+  const cur = $('#qSec').value;
+  $('#qSec').innerHTML = S.sections.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  if (S.sections.some(s => s.id === cur)) $('#qSec').value = cur;
+  if (!$('#qPts').value) $('#qPts').value = DIFF_PTS[$('#qDiff').value];
+
+  const total = S.questions.length, used = S.questions.filter(q => q.used).length;
+  $('#qSummary').textContent = total ? `${total} questions, ${used} answered, ${S.questions.reduce((a,q)=>a+(+q.points||0),0)} points on the board.` : '';
+  $('#qList').innerHTML = S.sections.map(s => {
+    const qs = S.questions.filter(q => q.sectionId === s.id)
+      .sort((a,b) => (a.points - b.points));
+    return `<div class="qgroup"><h3><span class="swatch" style="background:${s.color}"></span>${esc(s.name)}</h3>
+      ${qs.length ? qs.map(q => `<div class="qitem ${q.used?'used':''}">
+        <div><div class="pts">${esc(q.points)}</div><div class="diff">${esc(q.difficulty)}${q.used?'<br>answered':''}</div></div>
+        <div><div class="qtext">${esc(q.text)}</div><div class="ans">Answer: ${esc(q.answer)}</div></div>
+        <div class="acts"><button class="btn small" data-editq="${q.id}">Edit</button><button class="btn small ghost" data-delq="${q.id}" aria-label="Delete question">Delete</button></div>
+      </div>`).join('') : '<p class="empty">No questions yet.</p>'}</div>`; }).join('')
+    || '<p class="empty">Questions you add will be listed here, grouped by section.</p>';
+}
+
+$('#gTitle').oninput = e => { S.title = e.target.value; $('#brandTitle').textContent = S.title || 'Spin Jeopardy'; save(); };
+$('#gRules').oninput = e => { S.rules = e.target.value; save(); };
+document.querySelectorAll('input[name=wheelMode]').forEach(r => r.onchange = () => { S.settings.wheelMode = r.value; save(); });
+document.querySelectorAll('input[name=usedMode]').forEach(r => r.onchange = () => { S.settings.usedMode = r.value; save(); });
+$('#optTimer').onchange = e => { S.settings.timer = Math.max(0, +e.target.value || 0); save(); };
+$('#optSpin').onchange = e => { S.settings.spinSeconds = Math.min(15, Math.max(2, +e.target.value || 5)); e.target.value = S.settings.spinSeconds; save(); };
+$('#optDeduct').onchange = e => { S.settings.deductWrong = e.target.checked; save(); };
+$('#optSound').onchange = e => { S.settings.sound = e.target.checked; save(); };
+
+function addSection(name){
+  name = name.trim(); if (!name) return null;
+  const exist = S.sections.find(s => s.name.toLowerCase() === name.toLowerCase()); if (exist) return exist;
+  const used = new Set(S.sections.map(s => s.color));
+  const color = PALETTE.find(c => !used.has(c)) || PALETTE[S.sections.length % PALETTE.length];
+  const s = { id:uid(), name, color }; S.sections.push(s); return s;
+}
+$('#addSec').onclick = () => { if (!$('#secName').value.trim()) return $('#secName').focus();
+  const s = addSection($('#secName').value); $('#secName').value=''; save(); renderSetup(); $('#qSec').value = s.id; };
+$('#secName').onkeydown = e => { if (e.key === 'Enter') $('#addSec').click(); };
+$('#addTeam').onclick = () => { const n = $('#teamName').value.trim(); if (!n) return $('#teamName').focus();
+  S.teams.push({id:uid(), name:n, score:0}); $('#teamName').value=''; save(); renderSetup(); };
+$('#teamName').onkeydown = e => { if (e.key === 'Enter') $('#addTeam').click(); };
+
+$('#setupView').addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.rename){ const s = secById(t.dataset.rename); if (s){ s.name = t.value; save(); } }
+  if (t.dataset.teamname){ const tm = S.teams.find(x => x.id === t.dataset.teamname); if (tm){ tm.name = t.value; save(); } }
+});
+$('#setupView').addEventListener('change', e => { if (e.target.dataset.rename) renderSetup(); });
+$('#setupView').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.delsec){ const s = secById(b.dataset.delsec); const n = S.questions.filter(q => q.sectionId === s.id).length;
+    if (!confirm(`Delete "${s.name}"${n ? ` and its ${n} question${n===1?'':'s'}` : ''}?`)) return;
+    S.sections = S.sections.filter(x => x.id !== s.id); S.questions = S.questions.filter(q => q.sectionId !== s.id); save(); renderSetup(); }
+  if (b.dataset.delteam){ S.teams = S.teams.filter(t => t.id !== b.dataset.delteam); S.turn = 0; save(); renderSetup(); }
+  if (b.dataset.delq){ if (!confirm('Delete this question?')) return; S.questions = S.questions.filter(q => q.id !== b.dataset.delq); save(); renderSetup(); }
+  if (b.dataset.editq){ const q = S.questions.find(x => x.id === b.dataset.editq); editingId = q.id;
+    $('#qSec').value = q.sectionId; $('#qDiff').value = q.difficulty; $('#qPts').value = q.points; $('#qText').value = q.text; $('#qAns').value = q.answer;
+    $('#qFormTitle').textContent = 'Edit question'; $('#saveQ').textContent = 'Save changes'; $('#cancelEdit').hidden = false;
+    $('#qFormTitle').scrollIntoView({behavior:'smooth', block:'start'}); $('#qText').focus(); }
+});
+$('#qDiff').onchange = () => { $('#qPts').value = DIFF_PTS[$('#qDiff').value]; };
+function resetForm(){ editingId = null; $('#qText').value=''; $('#qAns').value='';
+  $('#qFormTitle').textContent = 'Add a question'; $('#saveQ').textContent = 'Add question'; $('#cancelEdit').hidden = true; }
+$('#cancelEdit').onclick = resetForm;
+$('#saveQ').onclick = () => {
+  if (!S.sections.length) { toast('Add a section first.'); return $('#secName').focus(); }
+  const text = $('#qText').value.trim(), answer = $('#qAns').value.trim();
+  if (!text) { toast('Write the question first.'); return $('#qText').focus(); }
+  const data = { sectionId:$('#qSec').value, difficulty:$('#qDiff').value, points:Math.max(0, +$('#qPts').value || 0), text, answer };
+  if (editingId){ Object.assign(S.questions.find(q => q.id === editingId), data); toast('Changes saved.'); }
+  else { S.questions.push({ id:uid(), used:false, ...data }); toast('Question added.'); }
+  save(); resetForm(); renderSetup(); $('#qText').focus();
+};
+
+function parseCSVLine(line){
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++){ const c = line[i];
+    if (q){ if (c === '"' && line[i+1] === '"'){ cur += '"'; i++; } else if (c === '"') q = false; else cur += c; }
+    else if (c === '"') q = true; else if (c === ',') { out.push(cur); cur=''; } else cur += c; }
+  out.push(cur); return out.map(s => s.trim());
+}
+$('#csvBtn').onclick = () => {
+  const lines = $('#csvIn').value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  let added = 0, skipped = 0;
+  lines.forEach(l => { const [sec, text, answer='', diffRaw='Medium', ptsRaw] = parseCSVLine(l);
+    if (!sec || !text || /^section$/i.test(sec)) { skipped++; return; }
+    const d = ['Easy','Medium','Hard'].find(x => x.toLowerCase() === diffRaw.toLowerCase()) || 'Medium';
+    const s = addSection(sec); const pts = ptsRaw !== undefined && ptsRaw !== '' && !isNaN(+ptsRaw) ? +ptsRaw : DIFF_PTS[d];
+    S.questions.push({ id:uid(), sectionId:s.id, text, answer, difficulty:d, points:pts, used:false }); added++; });
+  save(); renderSetup();
+  if (added) $('#csvIn').value = '';
+  toast(added ? `Added ${added} question${added===1?'':'s'}${skipped?`, skipped ${skipped} line${skipped===1?'':'s'}`:''}.` : 'No lines matched the format Section, Question, Answer, Difficulty, Points.');
+};
+
+$('#exportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = (S.title || 'game').replace(/[^\w-]+/g,'-').toLowerCase() + '.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$('#importBtn').onclick = () => $('#importFile').click();
+$('#importFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { const d = JSON.parse(await f.text()); if (!Array.isArray(d.questions)) throw 0;
+    S = normalize(d); save(); renderSetup(); toast('Game imported.'); }
+  catch(err){ toast('That file is not a Spin Jeopardy game file.'); }
+  e.target.value = '';
+};
+$('#sampleBtn').onclick = () => { if (!confirm('Replace the current game with the sample game?')) return; S = sampleState(); save(); resetForm(); renderSetup(); };
+$('#clearBtn').onclick = () => { if (!confirm('Delete all sections, questions and players and start blank?')) return; S = blankState(); save(); resetForm(); renderSetup(); };
+
+/* ================= PLAY ================= */
+const canvas = $('#wheel'), ctx = canvas.getContext('2d');
+let rot = 0, spinning = false, bulbPhase = 0;
+
+function segments(){
+  const remove = S.settings.usedMode === 'remove';
+  if (S.settings.wheelMode === 'sections'){
+    return S.sections.map(s => { const open = S.questions.filter(q => q.sectionId === s.id && !q.used).length;
+      const all = S.questions.filter(q => q.sectionId === s.id).length;
+      return { kind:'section', section:s, used: open === 0, label:s.name, sub:`${open} left`, color:s.color, has:all>0 }; })
+      .filter(g => g.has && (!remove || !g.used));
+  }
+  // interleave sections so neighbouring slices differ
+  const bySec = S.sections.map(s => S.questions.filter(q => q.sectionId === s.id && (!remove || !q.used)).sort((a,b)=>a.points-b.points));
+  const out = []; let i = 0, more = true;
+  while (more){ more = false; bySec.forEach(list => { if (list[i]){ more = true; out.push(list[i]); } }); i++; }
+  return out.map(q => { const s = secById(q.sectionId);
+    return { kind:'question', q, used:q.used, label:String(q.points), sub:s ? s.name : '', color:s ? s.color : '#888' }; });
+}
+
+function sizeCanvas(){
+  const w = canvas.clientWidth; if (!w) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(w * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
+}
+new ResizeObserver(sizeCanvas).observe(canvas);
+
+function fitText(text, maxW){
+  if (ctx.measureText(text).width <= maxW) return text;
+  let t = text; while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+  return t.length > 1 ? t + '…' : '';
+}
+
+function draw(){
+  const size = canvas.clientWidth; if (!size) return;
+  const c = size / 2, R = c - 4, rim = Math.max(10, size * 0.035), r = R - rim;
+  ctx.clearRect(0, 0, size, size);
+  const segs = segments();
+
+  // rim with marquee bulbs
+  ctx.beginPath(); ctx.arc(c, c, R, 0, Math.PI * 2); ctx.fillStyle = '#ffc940'; ctx.fill();
+  const bulbs = Math.max(16, Math.round(size / 26));
+  for (let i = 0; i < bulbs; i++){
+    const a = (i / bulbs) * Math.PI * 2; const on = (i + bulbPhase) % 2 === 0;
+    ctx.beginPath(); ctx.arc(c + Math.cos(a) * (R - rim / 2), c + Math.sin(a) * (R - rim / 2), rim * 0.24, 0, Math.PI * 2);
+    ctx.fillStyle = on ? '#ffffff' : '#b8892a'; ctx.fill();
+  }
+
+  if (!segs.length){
+    ctx.beginPath(); ctx.arc(c, c, r, 0, Math.PI * 2); ctx.fillStyle = '#17237a'; ctx.fill();
+    ctx.fillStyle = '#aeb6ea'; ctx.font = `600 ${Math.max(13, size*0.035)}px Figtree, sans-serif`; ctx.textAlign = 'center';
+    ctx.fillText(S.questions.length ? 'Every question has been answered' : 'Add questions in Setup', c, c + size * 0.2);
+    return;
+  }
+  const arc = (Math.PI * 2) / segs.length;
+  segs.forEach((g, i) => {
+    const start = rot + i * arc - Math.PI / 2;
+    ctx.beginPath(); ctx.moveTo(c, c); ctx.arc(c, c, r, start, start + arc); ctx.closePath();
+    ctx.fillStyle = g.used ? '#373c63' : g.color; ctx.fill();
+    ctx.lineWidth = Math.max(1.5, size * 0.004); ctx.strokeStyle = '#101a5c'; ctx.stroke();
+
+    const mid = start + arc / 2, flip = Math.cos(mid) < 0, k = flip ? -1 : 1;
+    ctx.save(); ctx.translate(c, c); ctx.rotate(flip ? mid + Math.PI : mid);
+    ctx.textAlign = flip ? 'left' : 'right'; ctx.textBaseline = 'middle';
+    const fg = g.used ? '#7c82a8' : textOn(g.color);
+    ctx.fillStyle = fg;
+    const chord = arc * r * 0.62; // usable height near rim
+    const edge = r - size * 0.03;
+    if (g.kind === 'question'){
+      const fs = Math.min(size * 0.055, chord * 0.62, 40);
+      ctx.font = `${fs}px Bungee, Impact, sans-serif`;
+      ctx.fillText(g.label, k * edge, 0);
+      const pw = ctx.measureText(g.label).width;
+      const sfs = Math.min(size * 0.028, chord * 0.5, 18);
+      if (sfs >= 8){
+        ctx.font = `600 ${sfs}px Figtree, sans-serif`; ctx.globalAlpha = 0.9;
+        const inner = edge - pw - size * 0.02, maxW = inner - r * 0.28;
+        if (maxW > 20) ctx.fillText(fitText(g.sub, maxW), k * inner, 0);
+      }
+      if (g.used){ ctx.globalAlpha = 1; ctx.strokeStyle = fg; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(k * (edge - pw), 0); ctx.lineTo(k * edge, 0); ctx.stroke(); }
+    } else {
+      const fs = Math.min(size * 0.04, chord * 0.42, 30);
+      ctx.font = `${fs}px Bungee, Impact, sans-serif`;
+      ctx.fillText(fitText(g.label, r * 0.66), k * edge, -fs * 0.35);
+      ctx.font = `600 ${fs * 0.55}px Figtree, sans-serif`;
+      ctx.fillText(g.sub, k * edge, fs * 0.6);
+    }
+    ctx.restore();
+  });
+}
+
+/* sound */
+let actx = null;
+function tick(){
+  if (!S.settings.sound) return;
+  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'square'; o.frequency.value = 1400; g.gain.setValueAtTime(0.06, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.035);
+    o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.04); } catch(e){}
+}
+
+function spin(){
+  if (spinning) return;
+  const segs = segments();
+  const openIdx = segs.map((g, i) => g.used ? -1 : i).filter(i => i >= 0);
+  if (!openIdx.length){ toast(S.questions.length ? 'Every question has been answered.' : 'Add questions in Setup first.'); return; }
+  const target = openIdx[Math.floor(Math.random() * openIdx.length)];
+  const arc = (Math.PI * 2) / segs.length;
+  const f = 0.2 + Math.random() * 0.6;
+  const desired = -(target + f) * arc;
+  const TAU = Math.PI * 2;
+  let delta = ((desired - rot) % TAU + TAU) % TAU;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const turns = reduce ? 1 : 5 + Math.floor(Math.random() * 3);
+  delta += turns * TAU;
+  const dur = (reduce ? 1.2 : S.settings.spinSeconds) * 1000;
+  const from = rot, t0 = performance.now();
+  let lastSeg = Math.floor(((-rot % TAU) + TAU) % TAU / arc), frame = 0;
+  spinning = true; $('#spinBtn').disabled = true; $('#spinBtn').textContent = '…';
+
+  function step(now){
+    const p = Math.min(1, (now - t0) / dur);
+    const e = 1 - Math.pow(1 - p, 4);
+    rot = from + delta * e;
+    const seg = Math.floor(((-rot % TAU) + TAU) % TAU / arc);
+    if (seg !== lastSeg){ lastSeg = seg; tick(); }
+    if (++frame % 6 === 0) bulbPhase ^= 1;
+    draw();
+    if (p < 1) requestAnimationFrame(step);
+    else {
+      rot = rot % TAU; spinning = false; bulbPhase = 0; draw();
+      $('#spinBtn').disabled = false; $('#spinBtn').textContent = 'Spin';
+      const g = segs[target];
+      setTimeout(() => {
+        if (g.kind === 'question') openQuestion(g.q);
+        else { const open = S.questions.filter(q => q.sectionId === g.section.id && !q.used);
+          openQuestion(open[Math.floor(Math.random() * open.length)]); }
+      }, 450);
+    }
+  }
+  requestAnimationFrame(step);
+}
+$('#spinBtn').onclick = spin;
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !$('#playView').hidden && !document.querySelector('dialog[open]') && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName)){
+    e.preventDefault(); spin(); }
+});
+
+function renderPlay(){
+  $('#brandTitle').textContent = S.title || 'Spin Jeopardy';
+  if (S.teams.length) S.turn = S.turn % S.teams.length;
+  const cur = S.teams[S.turn];
+  $('#turnText').innerHTML = cur ? `<strong>${esc(cur.name)}</strong>, it's your spin` : 'Add players in Setup to keep score';
+  $('#scoreList').innerHTML = S.teams.map((t, i) => `<div class="team ${i === S.turn ? 'active' : ''}">
+      <span class="name">${esc(t.name)}</span>
+      <span class="score ${t.score < 0 ? 'neg' : ''}">${t.score}</span>
+      <span class="adj"><button data-adj="${t.id}" data-by="100" aria-label="Add 100 to ${esc(t.name)}">+</button>
+      <button data-adj="${t.id}" data-by="-100" aria-label="Take 100 from ${esc(t.name)}">−</button></span></div>`).join('')
+    || '<p class="empty">No players yet.</p>';
+  const secsWithQ = S.sections.filter(s => S.questions.some(q => q.sectionId === s.id));
+  $('#legend').innerHTML = S.settings.wheelMode === 'questions' ? secsWithQ.map(s => `<span><i class="swatch" style="background:${s.color}"></i>${esc(s.name)}</span>`).join('') : '';
+  const open = S.questions.filter(q => !q.used).length;
+  $('#progress').textContent = S.questions.length ? `${open} of ${S.questions.length} questions left` : '';
+  draw();
+}
+$('#scoreList').addEventListener('click', e => {
+  const b = e.target.closest('button[data-adj]'); if (!b) return;
+  const t = S.teams.find(x => x.id === b.dataset.adj); t.score += +b.dataset.by; save(); renderPlay();
+});
+$('#skipTurn').onclick = () => { if (!S.teams.length) return; S.turn = (S.turn + 1) % S.teams.length; save(); renderPlay(); };
+$('#resetBoard').onclick = () => { if (!confirm('Mark every question unanswered and set all scores to 0?')) return;
+  S.questions.forEach(q => q.used = false); S.teams.forEach(t => t.score = 0); S.turn = 0; save(); renderPlay(); };
+$('#rulesBtn').onclick = () => { $('#rulesText').textContent = S.rules || 'No rules written yet.'; $('#rulesDialog').showModal(); };
+$('#rulesClose').onclick = () => $('#rulesDialog').close();
+
+/* question dialog */
+let activeQ = null, timerId = null, timeLeft = 0, paused = false, resolved = false;
+function openQuestion(q){
+  if (!q) return;
+  activeQ = q; resolved = false;
+  const s = secById(q.sectionId);
+  const tag = $('#qdSec'); tag.textContent = s ? s.name : ''; tag.style.background = s ? s.color : '#888'; tag.style.color = s ? textOn(s.color) : '#fff';
+  $('#qdDiff').textContent = q.difficulty; $('#qdPts').textContent = q.points;
+  $('#qdBody').textContent = q.text;
+  $('#qdAnsText').textContent = q.answer || '(no answer entered)';
+  $('#qdAnswer').hidden = true; $('#qdReveal').hidden = false;
+  renderAward();
+  clearInterval(timerId); paused = false; $('#qdPause').textContent = 'Pause';
+  const T = +S.settings.timer || 0;
+  $('#qdTimerWrap').hidden = T === 0;
+  if (T > 0){ timeLeft = T; updateTimer(true); timerId = setInterval(() => { if (paused) return; timeLeft--; updateTimer(); if (timeLeft <= 0){ clearInterval(timerId); toast("Time's up!"); } }, 1000); }
+  $('#qDialog').showModal();
+}
+function updateTimer(instant){
+  const T = +S.settings.timer, bar = $('#qdTimer i');
+  if (instant){ bar.style.transition = 'none'; bar.style.width = '100%'; bar.offsetWidth; bar.style.transition = ''; }
+  bar.style.width = (Math.max(0, timeLeft) / T * 100) + '%';
+  $('#qdTimer').classList.toggle('low', timeLeft <= Math.min(5, T * 0.25));
+  $('#qdTimeText').textContent = timeLeft > 0 ? `${timeLeft} second${timeLeft===1?'':'s'} left` : "Time's up";
+}
+$('#qdPause').onclick = () => { paused = !paused; $('#qdPause').textContent = paused ? 'Resume' : 'Pause'; };
+function renderAward(){
+  if (!S.teams.length){ $('#qdAward').innerHTML = ''; return; }
+  $('#qdAward').innerHTML = S.teams.map((t, i) => `<div class="arow ${i === S.turn ? 'current' : ''}"><span>${esc(t.name)}</span>
+    <button class="btn small good" data-right="${t.id}">Correct +${activeQ.points}</button>
+    <button class="btn small bad" data-wrong="${t.id}">Wrong${S.settings.deductWrong ? ' −' + activeQ.points : ''}</button></div>`).join('');
+}
+$('#qdReveal').onclick = () => { $('#qdAnswer').hidden = false; $('#qdReveal').hidden = true; paused = true; $('#qdPause').textContent = 'Resume'; };
+$('#qdAward').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || !activeQ) return;
+  if (b.dataset.right){ const t = S.teams.find(x => x.id === b.dataset.right); t.score += +activeQ.points;
+    toast(`${t.name} +${activeQ.points}`); finishQuestion(true); }
+  if (b.dataset.wrong){ const t = S.teams.find(x => x.id === b.dataset.wrong);
+    if (S.settings.deductWrong){ t.score -= +activeQ.points; toast(`${t.name} −${activeQ.points}`); } else toast(`${t.name}: wrong`);
+    b.disabled = true; b.previousElementSibling.disabled = true; save(); renderPlay(); }
+});
+function finishQuestion(markUsed){
+  if (resolved) return; resolved = true;
+  clearInterval(timerId);
+  if (activeQ && markUsed){ activeQ.used = true; if (S.teams.length) S.turn = (S.turn + 1) % S.teams.length; }
+  activeQ = null; save();
+  if ($('#qDialog').open) $('#qDialog').close();
+  renderPlay();
+  if (markUsed && !S.questions.some(q => !q.used) && S.questions.length) showWinner();
+}
+$('#qdDone').onclick = () => finishQuestion(true);
+$('#qdPutBack').onclick = () => finishQuestion(false);
+$('#qDialog').addEventListener('cancel', e => { e.preventDefault(); }); // force an explicit choice
+function showWinner(){
+  if (!S.teams.length){ toast('Every question has been answered.'); return; }
+  const top = Math.max(...S.teams.map(t => t.score));
+  const winners = S.teams.filter(t => t.score === top).map(t => t.name);
+  $('#rulesHead').textContent = 'Game over';
+  $('#rulesText').textContent = (winners.length > 1 ? `It's a tie between ${winners.join(' and ')}` : `${winners[0]} wins`) + ` with ${top} points.\n\n` +
+    S.teams.slice().sort((a,b) => b.score - a.score).map(t => `${t.name}: ${t.score}`).join('\n');
+  $('#rulesDialog').showModal();
+  $('#rulesDialog').addEventListener('close', () => $('#rulesHead').textContent = 'Rules', { once:true });
+}
+
+/* init */
+save(); renderSetup();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+})();
+</script>
+</body>
+</html>

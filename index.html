@@ -180,11 +180,12 @@ textarea.ar{font-size:1.35rem}
 
 /* ---------- TV mode and short landscape screens (phone mirrored to a TV) ---------- */
 #tvBtn{white-space:nowrap}
-body.tv .tabs, body.tv .boardfoot, body.tv .legend{display:none}
+html.tv{font-size:clamp(16px, 1.1vw, 30px)}
+body.tv .boardfoot{justify-content:flex-start}
 body.tv .bar{padding:.5rem 1.25rem}
 body.tv main{max-width:none;padding:.75rem 1.5rem}
 body.tv .play{grid-template-columns:auto minmax(0,1fr);align-items:center;gap:2.5rem}
-body.tv .wheelwrap{width:min(calc(100vh - 190px), 56vw)}
+body.tv .wheelwrap{width:min(calc(100vh - 13.5rem), 56vw)}
 body.tv .turn{font-size:1.7rem}
 body.tv .board h2{font-size:1.6rem}
 body.tv .team{padding:1rem 1.3rem 1.2rem}
@@ -475,10 +476,10 @@ function showTab(which){
   $('#setupView').hidden = play; $('#playView').hidden = !play;
   if (play){ shown = {}; scoreKey = ''; renderPlay(); requestAnimationFrame(sizeCanvas); } else renderSetup();
 }
-$('#tabSetup').onclick = () => showTab('setup');
+$('#tabSetup').onclick = () => { if (document.body.classList.contains('tv')) setTV(false); showTab('setup'); };
 $('#tabPlay').onclick = () => showTab('play');
 function setTV(on){
-  document.body.classList.toggle('tv', on);
+  document.body.classList.toggle('tv', on); document.documentElement.classList.toggle('tv', on);
   $('#tvBtn').textContent = on ? 'Exit TV mode' : 'TV mode';
   if (on){ showTab('play');
     const el = document.documentElement, fs = el.requestFullscreen || el.webkitRequestFullscreen;

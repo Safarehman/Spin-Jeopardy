@@ -169,6 +169,15 @@ textarea.ar{font-size:1.35rem}
 .balance .ok{color:var(--good)} .balance .warn{color:#ffb86b}
 .mys{background:#7c3aed;color:#fff}
 .mbox{text-align:center;padding:1rem 0 .4rem}
+/* while a Mystery box opens, show only the box and the prize */
+.card.revealing{overflow:hidden}
+.card.revealing .qmeta,.card.revealing .qbody,.card.revealing .qar,.card.revealing .qimg,.card.revealing #qdTimerWrap,
+.card.revealing .answer,.card.revealing #qdReveal,.card.revealing #qdPrizeSub:empty{display:none}
+.card.revealing .mbox{padding:1.5rem 0 .5rem}
+.card.revealing .mbox .boxicon{font-size:clamp(6rem,16vh,10rem)}
+.card.revealing .mbox .prize{font-size:clamp(2.6rem,7vw,4.8rem);line-height:1.15;margin:1rem 0 .4rem}
+.card.revealing .mbox .prizesub{font-size:1.3rem}
+.card.revealing #qdContinue{font-size:1.2rem;padding:.8rem 2rem;margin-top:.6rem}
 .mbox .boxicon{font-size:5.5rem;line-height:1;display:inline-block}
 .mbox .boxicon.shake{animation:shake .18s linear infinite}
 .mbox .boxicon.open{animation:popin .6s cubic-bezier(.2,1.6,.4,1)}
@@ -409,7 +418,7 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
 
 <!-- Question dialog -->
 <dialog id="qDialog" aria-labelledby="qdBody">
-  <div class="card">
+  <div class="card" id="qdCard">
     <div class="qmeta">
       <span class="tag" id="qdSec"></span>
       <span class="tag" id="qdDiff" style="background:var(--navy);color:var(--muted)"></span>
@@ -1192,7 +1201,7 @@ let activeMys = false, activeDouble = false, activeQ = null, timerId = null, tim
 function openQuestion(q){
   if (!q) return;
   activeQ = q; activeDouble = !!q.double; activeMys = !!q.mystery; resolved = false;
-  $('#qdMbox').hidden = true; $('#qdFoot').hidden = false; $('#qdAward').hidden = false; $('#qdMysBanner').hidden = !activeMys;
+  $('#qdCard').classList.remove('revealing'); $('#qdMbox').hidden = true; $('#qdFoot').hidden = false; $('#qdAward').hidden = false; $('#qdMysBanner').hidden = !activeMys;
   const s = secById(q.sectionId);
   const tag = $('#qdSec'); tag.hidden = !s; tag.textContent = s ? s.name : ''; tag.style.background = s ? s.color : '#888'; tag.style.color = s ? textOn(s.color) : '#fff';
   $('#qdDiff').textContent = q.difficulty; $('#qdPts').textContent = activeDouble ? '×2' : activeMys ? '🎁 ?' : q.points; $('#qdDouble').hidden = !activeDouble;
@@ -1264,7 +1273,7 @@ function applyPrize(p, t){
 function openMystery(t, correct){
   Suspense.stop(); clearInterval(timerId); paused = true;
   $('#qdAward').hidden = true; $('#qdFoot').hidden = true; $('#qdReveal').hidden = true; $('#qdAnswer').hidden = false;
-  const box = $('#qdMbox'), icon = $('#qdBoxIcon'); box.hidden = false;
+  const box = $('#qdMbox'), icon = $('#qdBoxIcon'); box.hidden = false; $('#qdCard').classList.add('revealing'); $('#qdCard').scrollTop = 0;
   icon.textContent = '🎁'; icon.className = 'boxicon shake'; $('#qdPrize').textContent = correct ? 'Opening the box…' : ''; $('#qdPrizeSub').textContent = '';
   $('#qdContinue').hidden = true; mysExtraSpin = false;
   const prize = pickPrize();
@@ -1274,7 +1283,7 @@ function openMystery(t, correct){
   drumroll(1.5);
   setTimeout(() => {
     icon.className = 'boxicon open'; icon.textContent = prize.icon;
-    $('#qdPrize').textContent = prize.label; $('#qdPrizeSub').textContent = applyPrize(prize, t);
+    $('#qdPrize').textContent = prize.label; applyPrize(prize, t); $('#qdPrizeSub').textContent = '';
     if (prize.id === 'oops') boo(); else applause();
     save(); $('#qdContinue').hidden = false;
   }, 1500);

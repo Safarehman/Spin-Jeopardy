@@ -18,6 +18,7 @@
   --navy:#101a5c; --navy-2:#17237a; --navy-3:#1f2e96; --line:#2d3ca8;
   --gold:#ffc940; --gold-dim:#b8892a; --ink:#ffffff; --muted:#aeb6ea;
   --good:#2ec4b6; --bad:#ff5c5c; --used:#373c63;
+  --scrim:rgba(5,9,40,.86); --bar-bg:rgba(16,26,92,.94); --glow:#22319e;
   --display:'Bungee', 'Impact', 'Arial Black', sans-serif;
   --body:'Figtree', 'Noto Nastaliq Urdu', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme:dark;
@@ -27,7 +28,37 @@
 *,*::before,*::after{box-sizing:inherit}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--navy);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
-  background-image:radial-gradient(circle at 50% -20%, #22319e 0%, transparent 60%);min-height:100vh}
+  background-image:radial-gradient(circle at 50% -20%, var(--glow) 0%, transparent 60%);min-height:100vh}
+/* ---------- Skin: Eid in the Park ---------- */
+body.theme-eid{
+  --navy:#0c3328; --navy-2:#124536; --navy-3:#1a5a46; --line:#2a6f58;
+  --gold:#e2b94b; --gold-dim:#9c7a2a; --ink:#fff8e7; --muted:#b9d6c6;
+  --good:#4fc3a1; --bad:#ff6b6b; --used:#2c4a40;
+  --scrim:rgba(4,24,18,.86); --bar-bg:rgba(12,51,40,.94); --glow:#1f6b52;
+  background-image:radial-gradient(circle at 50% -15%, rgba(79,169,214,.28) 0%, transparent 55%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23e2b94b' stroke-opacity='0.07' stroke-width='1.3'%3E%3Crect x='27' y='27' width='42' height='42'/%3E%3Crect x='27' y='27' width='42' height='42' transform='rotate(45 48 48)'/%3E%3Ccircle cx='48' cy='48' r='10'/%3E%3Cpath d='M0 0L18 18M96 0L78 18M0 96L18 78M96 96L78 78'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:auto, 96px 96px;
+}
+body.theme-eid .brand::before{content:'☾ ';}
+body.theme-eid .brand::after{content:' ✦';}
+/* faint family photo behind the game */
+#bgPhoto{position:fixed;inset:-30px;z-index:-1;background-size:cover;background-position:center;filter:blur(10px) brightness(.55) saturate(1.1);opacity:.22;pointer-events:none}
+/* welcome screen */
+.welcome{position:fixed;inset:0;z-index:85;display:flex;flex-direction:column;background:var(--navy);overflow:hidden}
+.welcome .wbg{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(24px) brightness(.45)}
+.welcome .wphoto{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:4vh 4vw 0}
+.welcome .wphoto img{max-width:100%;max-height:100%;border-radius:18px;border:4px solid var(--gold);box-shadow:0 20px 60px rgba(0,0,0,.5);animation:popin .9s cubic-bezier(.2,1.2,.4,1)}
+.welcome .wtext{position:relative;text-align:center;padding:2.5vh 1rem calc(3vh + env(safe-area-inset-bottom,0px))}
+.welcome h1{font-family:var(--display);font-weight:400;color:var(--gold);font-size:clamp(2rem,6vw,4.6rem);margin:0;line-height:1.1;text-shadow:0 4px 0 rgba(0,0,0,.35);overflow-wrap:anywhere}
+.welcome p{color:var(--ink);font-size:clamp(1.1rem,2.4vw,1.8rem);margin:.4rem 0 1.2rem;unicode-bidi:plaintext}
+.welcome .btn{font-size:clamp(1.1rem,2vw,1.5rem);padding:.8rem 2.4rem}
+.welcome.nophoto .wphoto{display:none}
+.welcome.nophoto .wtext{margin:auto 0}
+.winner{gap:3vw}
+.wimg{max-width:50vw;max-height:84vh;border-radius:18px;border:4px solid var(--gold);box-shadow:0 20px 60px rgba(0,0,0,.5);animation:popin .9s cubic-bezier(.2,1.2,.4,1)}
+.winner.withphoto .wcard{width:min(520px,42vw)}
+@media (max-width:900px), (orientation:portrait){ .wimg{display:none} .winner.withphoto .wcard{width:min(640px,94vw)} }
+.skinprev{display:flex;align-items:center;gap:.8rem;margin-top:.6rem}
+.skinprev img{max-height:80px;max-width:150px;border-radius:8px}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
@@ -101,7 +132,7 @@ fieldset{border:0;padding:0;margin:0}
   border:5px solid var(--gold);background:var(--navy);color:var(--gold);font-family:var(--display);font-size:clamp(.9rem,2.6vw,1.5rem);
   cursor:pointer;box-shadow:0 0 0 6px var(--navy)}
 #spinBtn:hover:not(:disabled){background:var(--navy-3)}
-#spinBtn:disabled{cursor:wait;opacity:.9}
+#spinBtn:disabled{cursor:wait;opacity:1}
 .stagefoot{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;align-items:center;color:var(--muted)}
 .legend{display:flex;flex-wrap:wrap;gap:.4rem .9rem;justify-content:center;font-size:.9rem}
 .legend span{display:inline-flex;align-items:center;gap:.35rem}
@@ -129,7 +160,7 @@ fieldset{border:0;padding:0;margin:0}
 
 /* Dialogs */
 dialog{border:0;padding:0;background:transparent;color:var(--ink);max-width:min(760px, 94vw);width:100%}
-dialog::backdrop{background:rgba(5,9,40,.82)}
+dialog::backdrop{background:var(--scrim)}
 .card{background:var(--navy-2);border:3px solid var(--gold);border-radius:20px;padding:1.5rem 1.6rem;max-height:90vh;overflow:auto}
 .qmeta{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
 .tag{padding:.25rem .7rem;border-radius:999px;font-weight:800;font-size:.9rem}
@@ -192,7 +223,7 @@ textarea.ar{font-size:1.35rem}
 .team .crown.drop{animation:crowndrop .7s cubic-bezier(.2,1.5,.4,1)}
 @keyframes crowndrop{0%{transform:translateY(-40px) scale(1.6);opacity:0}100%{transform:none;opacity:1}}
 #fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:90}
-.winner{position:fixed;inset:0;z-index:80;background:rgba(5,9,40,.9);display:flex;align-items:center;justify-content:center;padding:1rem}
+.winner{position:fixed;inset:0;z-index:80;background:var(--scrim);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;padding:1rem}
 .wcard{background:var(--navy-2);border:4px solid var(--gold);border-radius:24px;padding:2rem 2.2rem;text-align:center;width:min(640px,94vw);max-height:92vh;overflow:auto;animation:popin .7s cubic-bezier(.2,1.4,.4,1)}
 .wcard .trophy{font-size:5rem;line-height:1}
 .wcard h2{font-family:var(--display);font-weight:400;color:var(--gold);font-size:clamp(1.8rem,5vw,3rem);margin:.5rem 0 .2rem;overflow-wrap:anywhere}
@@ -201,9 +232,13 @@ textarea.ar{font-size:1.35rem}
 .wrow .n{flex:1;font-weight:800;font-size:1.2rem;overflow-wrap:anywhere}
 .wrow .sc{font-family:var(--display);font-size:1.6rem}
 .wrow.first{outline:3px solid var(--gold)}
+.savebar{grid-column:1/-1;position:sticky;bottom:0;z-index:5;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;justify-content:flex-end;
+  background:var(--bar-bg);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:14px;padding:.7rem 1rem;margin-bottom:.5rem}
+.savebar span{color:var(--muted);font-size:.92rem;flex:1;min-width:12rem}
+.savebar span b{color:var(--good)}
 .rulestext{white-space:pre-wrap;font-size:1.05rem}
 
-.toast{position:fixed;left:50%;bottom:calc(1.2rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--gold);color:var(--navy);
+.toast{position:fixed;left:50%;bottom:calc(5.5rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--gold);color:var(--navy);
   padding:.6rem 1.1rem;border-radius:10px;font-weight:700;z-index:50;max-width:90vw}
 
 @media (max-width:860px){
@@ -312,6 +347,11 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
         <div><label for="optTimer">Answer timer (seconds, 0 = off)</label><input type="number" id="optTimer" min="0" max="600"></div>
         <div><label for="optSpin">Spin length (seconds)</label><input type="number" id="optSpin" min="2" max="15"></div>
       </div>
+      <div class="row">
+        <div><label for="optReveal">Glow before the question appears (seconds)</label><input type="number" id="optReveal" min="0.5" max="8" step="0.5"></div>
+        <div><label for="optTimerStart">Start the answer timer</label>
+          <select id="optTimerStart"><option value="manual">When the host clicks Start timer</option><option value="auto">As soon as the question appears</option></select></div>
+      </div>
       <label class="toggle"><input type="checkbox" id="optFair"> Fair turns: every team gets the same number of questions from each points value</label>
       <div id="balanceBox"></div>
       <label class="toggle"><input type="checkbox" id="optDeduct"> Wrong answers lose the question's points</label>
@@ -322,6 +362,20 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
         <div><label for="optVol">Sound volume</label><input type="range" id="optVol" min="0" max="100" style="width:100%;accent-color:var(--gold)"></div>
         <button class="btn shrink" id="testSfx">Test sounds</button>
       </div>
+    </div>
+
+    <div class="panel stack">
+      <h2>Look and feel</h2>
+      <div><label for="skinTheme">Skin</label>
+        <select id="skinTheme"><option value="show">Game Show (navy and gold)</option><option value="eid">Eid in the Park (green, gold and sky blue)</option></select></div>
+      <div><label for="skinSub">Welcome message (optional, English or Urdu)</label><input type="text" id="skinSub" dir="auto" placeholder="Eid Mubarak! Welcome to our family quiz"></div>
+      <div><label>Family photo (stays in this browser only, never on the public site)</label>
+        <div class="row"><button class="btn shrink" id="skinPhotoBtn" type="button">Choose photo</button><input type="file" id="skinPhotoFile" accept="image/*" hidden></div>
+        <div class="skinprev" id="skinPrev" hidden><img alt="Family photo preview"><button class="btn small ghost" id="skinPhotoRemove" type="button">Remove photo</button></div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="skinWelcome"> Show a welcome screen when the game starts</label>
+      <label class="toggle"><input type="checkbox" id="skinWinner"> Show the photo on the winner screen</label>
+      <label class="toggle"><input type="checkbox" id="skinBg"> Faint photo behind the wheel</label>
     </div>
 
     <div class="panel">
@@ -388,6 +442,10 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
       <div id="qList"></div>
     </div>
   </div>
+  <div class="savebar">
+    <span id="saveStatus">Changes save automatically in this browser.</span>
+    <button class="btn primary" id="saveNow">Save</button>
+  </div>
 </section>
 
 <!-- ============ PLAY ============ -->
@@ -411,6 +469,7 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
       <button class="btn" id="rulesBtn">Show rules</button>
       <button class="btn ghost" id="skipTurn">Next player's turn</button>
       <button class="btn ghost" id="resetBoard">Reset board and scores</button>
+      <button class="btn ghost" id="welcomeBtn">Welcome screen</button>
     </div>
   </aside>
 </section>
@@ -459,6 +518,7 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
 
 <div class="toast" id="toast" role="status" hidden></div>
 <div class="winner" id="winner" hidden role="dialog" aria-modal="true" aria-labelledby="wTitle">
+  <img class="wimg" id="wImg" alt="Family photo" hidden>
   <div class="wcard">
     <div class="trophy" aria-hidden="true">🏆</div>
     <h2 id="wTitle"></h2>
@@ -471,16 +531,37 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
   </div>
 </div>
 <canvas id="fx" aria-hidden="true"></canvas>
+<div id="bgPhoto" hidden></div>
+<div class="welcome" id="welcome" hidden role="dialog" aria-modal="true" aria-labelledby="welTitle">
+  <div class="wbg" id="welBg"></div>
+  <div class="wphoto"><img id="welImg" alt="Family photo"></div>
+  <div class="wtext">
+    <h1 id="welTitle"></h1>
+    <p id="welSub"></p>
+    <button class="btn primary" id="welStart">Start the game</button>
+  </div>
+</div>
 
 <script>
 (() => {
 'use strict';
 const LS = 'spinJeopardy.v1';
+const THEMES = {
+  show:{ palette:['#E4572E','#29B6F6','#8BC34A','#AB47BC','#FFB300','#26A69A','#EC407A','#7E8CE0','#FF8A50','#C0CA33','#4DD0E1','#F06292'],
+    rim:'#ffc940', rimDim:'#b8892a', bulb:'#ffffff', line:'#101a5c', used:'#373c63', usedText:'#7c82a8', empty:'#17237a', emptyText:'#aeb6ea',
+    dim:'10,16,60', dark:'#101a5c', double:'#ffc940', mystery:'#7c3aed',
+    confetti:['#ffc940','#2ec4b6','#ff7a59','#a78bfa','#4fc3f7','#ffffff','#f06292','#9ccc65'] },
+  eid:{ palette:['#9b2335','#4fa9d6','#5aa845','#2a9d8f','#e07a5f','#3d5a9e','#b5838d','#8ab17d','#c0504d','#6fb7c9','#7a9e3a','#a05c8a'],
+    rim:'#e2b94b', rimDim:'#8a6a22', bulb:'#fff8e7', line:'#0b2e24', used:'#2c4a40', usedText:'#86a89a', empty:'#124536', emptyText:'#b9d6c6',
+    dim:'6,30,22', dark:'#0b2e24', double:'#e2b94b', mystery:'#6d3fc0',
+    confetti:['#e2b94b','#fff8e7','#5aa845','#9b2335','#4fa9d6','#2a9d8f','#f3e6c8'] }
+};
+const TH = () => THEMES[(S.skin && S.skin.theme) || 'show'] || THEMES.show;
 const PALETTE = ['#E4572E','#29B6F6','#8BC34A','#AB47BC','#FFB300','#26A69A','#EC407A','#7E8CE0','#FF8A50','#C0CA33','#4DD0E1','#F06292'];
 const DIFF_PTS = { 'Very easy':100, 'Easy':200, 'Medium':300, 'Hard':400, 'Very hard':500 };
 const DIFFS = Object.keys(DIFF_PTS);
 const special = q => !!(q.double || q.mystery);
-const MYS_COLOR = '#7c3aed';
+const MYS_COLOR = '#7c3aed'; const mysColor = () => TH().mystery;
 const PRIZES = [
   { id:'p100',  icon:'💰', label:'+100 points',       w:3, on:true },
   { id:'p200',  icon:'💰', label:'+200 points',       w:3, on:true },
@@ -509,8 +590,9 @@ const DEFAULT_RULES =
 
 function blankState(){
   return { title:'Spin Jeopardy', rules:DEFAULT_RULES,
-    settings:{ wheelMode:'questions', usedMode:'gray', timer:30, spinSeconds:5, deductWrong:true, sound:true, sfx:true, volume:70, fair:true, celebrate:true, prizes:null },
-    sections:[], questions:[], teams:[], turn:0 };
+    settings:{ wheelMode:'questions', usedMode:'gray', timer:30, spinSeconds:5, revealSeconds:2.5, timerStart:'manual', deductWrong:true, sound:true, sfx:true, volume:70, fair:true, celebrate:true, prizes:null },
+    sections:[], questions:[], teams:[], turn:0,
+    skin:{ theme:'show', subtitle:'', photo:false, welcome:true, winnerPhoto:true, bgPhoto:false } };
 }
 function sampleState(){
   const s = blankState(); s.title = 'Family Quiz Night';
@@ -537,23 +619,32 @@ function normalize(d){
   if (!d || typeof d !== 'object') return b;
   return { ...b, ...d, settings:{ ...b.settings, ...(d.settings||{}) },
     sections:Array.isArray(d.sections)?d.sections:[], questions:Array.isArray(d.questions)?d.questions:[],
-    teams:Array.isArray(d.teams)?d.teams:[], turn:Number(d.turn)||0 };
+    teams:Array.isArray(d.teams)?d.teams:[], turn:Number(d.turn)||0, skin:{ ...b.skin, ...(d.skin||{}) } };
 }
 let S = load() || sampleState();
 
-function save(){ try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){} }
+function save(){
+  let ok = true; try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){ ok = false; }
+  const el = document.getElementById('saveStatus');
+  if (el) el.innerHTML = ok ? `<b>✓ Saved</b> in this browser at ${new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit', second:'2-digit'})}` : '⚠ Could not save. The browser storage may be full or blocked.';
+  return ok;
+}
 
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2600); }
 const secById = id => S.sections.find(s => s.id === id);
 function textOn(hex){ const n = parseInt(hex.slice(1),16); const r=n>>16,g=(n>>8)&255,b=n&255;
-  return (0.299*r+0.587*g+0.114*b) > 150 ? '#101a5c' : '#ffffff'; }
+  return (0.299*r+0.587*g+0.114*b) > 150 ? TH().dark : '#ffffff'; }
 
 /* ================= TABS ================= */
+let welcomedThisBoard = false;
 function showTab(which){
   const play = which === 'play';
   $('#tabSetup').setAttribute('aria-selected', !play); $('#tabPlay').setAttribute('aria-selected', play);
   $('#setupView').hidden = play; $('#playView').hidden = !play;
-  if (play){ shown = {}; scoreKey = ''; renderPlay(); requestAnimationFrame(sizeCanvas); } else renderSetup();
+  if (play){ shown = {}; scoreKey = ''; renderPlay(); requestAnimationFrame(sizeCanvas);
+    if (S.skin.welcome && !S.questions.some(q => q.used) && !welcomedThisBoard){ welcomedThisBoard = true; showWelcome(); } }
+  else renderSetup();
+  applySkin();
 }
 $('#tabSetup').onclick = () => { if (document.body.classList.contains('tv')) setTV(false); showTab('setup'); };
 $('#tabPlay').onclick = () => showTab('play');
@@ -596,6 +687,36 @@ function shrinkImage(file, max = 1280){
     im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('bad image')); }; im.src = url; });
 }
 
+/* ================= SKIN ================= */
+const SKIN_PHOTO = 'skin-photo';
+async function applySkin(){
+  const k = S.skin || {};
+  document.body.classList.toggle('theme-eid', k.theme === 'eid');
+  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = k.theme === 'eid' ? '#0c3328' : '#101a5c';
+  const photo = k.photo ? await IMG.get(SKIN_PHOTO) : null;
+  const bg = $('#bgPhoto');
+  bg.hidden = !(photo && k.bgPhoto && !$('#playView').hidden);
+  if (!bg.hidden) bg.style.backgroundImage = `url(${photo})`;
+  if (typeof draw === 'function') draw();
+  return photo;
+}
+function recolorSections(){ const pal = TH().palette; S.sections.forEach((s, i) => s.color = pal[i % pal.length]); }
+async function showWelcome(){
+  const k = S.skin, photo = k.photo ? await IMG.get(SKIN_PHOTO) : null, w = $('#welcome');
+  w.classList.toggle('nophoto', !photo);
+  $('#welBg').style.backgroundImage = photo ? `url(${photo})` : 'none';
+  if (photo) $('#welImg').src = photo;
+  $('#welTitle').textContent = S.title || 'Spin Jeopardy';
+  $('#welSub').textContent = k.subtitle || ''; $('#welSub').hidden = !k.subtitle;
+  w.hidden = false; $('#welStart').focus();
+  if (S.settings.sfx){ try { const a = ac(), t0 = a.currentTime + 0.05;
+    [392, 523.25, 659.25, 783.99].forEach((f, i) => { const o = a.createOscillator(), g = a.createGain(); o.type = 'triangle'; o.frequency.value = f;
+      const t = t0 + i * 0.14; env(g, t, 0.1, 0.01, i === 3 ? 1.1 : 0.25); o.connect(g).connect(master()); o.start(t); o.stop(t + 1.3); }); } catch(e){} }
+}
+function hideWelcome(){ $('#welcome').hidden = true; FX.rain(90); }
+$('#welStart').onclick = hideWelcome;
+document.addEventListener('keydown', e => { if (!$('#welcome').hidden && (e.key === 'Escape' || e.key === 'Enter')) { e.preventDefault(); hideWelcome(); } });
+
 /* ================= SETUP ================= */
 let editingId = null;
 function renderSetup(){
@@ -603,7 +724,7 @@ function renderSetup(){
   $('#gTitle').value = S.title; $('#gRules').value = S.rules;
   document.querySelectorAll('input[name=wheelMode]').forEach(r => r.checked = r.value === S.settings.wheelMode);
   document.querySelectorAll('input[name=usedMode]').forEach(r => r.checked = r.value === S.settings.usedMode);
-  $('#optTimer').value = S.settings.timer; $('#optSpin').value = S.settings.spinSeconds;
+  $('#optTimer').value = S.settings.timer; $('#optSpin').value = S.settings.spinSeconds; $('#optReveal').value = S.settings.revealSeconds; $('#optTimerStart').value = S.settings.timerStart;
   $('#optFair').checked = S.settings.fair; renderBalance(); $('#optDeduct').checked = S.settings.deductWrong; $('#optSound').checked = S.settings.sound; $('#optSfx').checked = S.settings.sfx; $('#optCelebrate').checked = S.settings.celebrate; $('#optVol').value = S.settings.volume;
 
   $('#secList').innerHTML = S.sections.length ? S.sections.map(s => {
@@ -624,6 +745,10 @@ function renderSetup(){
   if (S.sections.some(s => s.id === cur)) $('#qSec').value = cur;
   if (!$('#qPts').value) $('#qPts').value = DIFF_PTS[$('#qDiff').value];
 
+  $('#skinTheme').value = S.skin.theme; $('#skinSub').value = S.skin.subtitle || '';
+  $('#skinWelcome').checked = S.skin.welcome; $('#skinWinner').checked = S.skin.winnerPhoto; $('#skinBg').checked = S.skin.bgPhoto;
+  $('#skinPrev').hidden = !S.skin.photo;
+  if (S.skin.photo) IMG.get(SKIN_PHOTO).then(d => { if (d) $('#skinPrev img').src = d; else { $('#skinPrev').hidden = true; } });
   $('#prizeList').innerHTML = PRIZES.map(p => `<label class="toggle"><input type="checkbox" data-prize="${p.id}" ${prizeOn(p.id) ? 'checked' : ''}> ${p.icon} ${p.label}${p.w === 1 ? ' <small style="color:var(--muted)">(rare)</small>' : ''}</label>`).join('');
   const regs = S.questions.filter(q => !special(q)), dbls = S.questions.filter(q => q.double), myss = S.questions.filter(q => q.mystery);
   const used = S.questions.filter(q => q.used).length;
@@ -638,8 +763,8 @@ function renderSetup(){
       .sort((a,b) => (a.points - b.points));
     return `<div class="qgroup"><h3><span class="swatch" style="background:${s.color}"></span>${esc(s.name)}</h3>
       ${qs.length ? qs.map(q => item(q, esc(q.points))).join('') : '<p class="empty">No questions yet.</p>'}</div>`; }).join('')
-    + (dbls.length ? `<div class="qgroup"><h3><span class="swatch" style="background:#ffc940"></span>Double your points</h3>${dbls.map(q => item(q, '×2')).join('')}</div>` : '')
-    + (myss.length ? `<div class="qgroup"><h3><span class="swatch" style="background:${MYS_COLOR}"></span>Mystery box</h3>${myss.map(q => item(q, '🎁')).join('')}</div>` : '')
+    + (dbls.length ? `<div class="qgroup"><h3><span class="swatch" style="background:${TH().double}"></span>Double your points</h3>${dbls.map(q => item(q, '×2')).join('')}</div>` : '')
+    + (myss.length ? `<div class="qgroup"><h3><span class="swatch" style="background:${mysColor()}"></span>Mystery box</h3>${myss.map(q => item(q, '🎁')).join('')}</div>` : '')
     || '<p class="empty">Questions you add will be listed here, grouped by section.</p>';
   document.querySelectorAll('img[data-thumb]').forEach(async el => { const q = S.questions.find(x => x.id === el.dataset.thumb);
     const src = q && await imgSrc(q); if (src) el.src = src; else el.remove(); });
@@ -650,12 +775,29 @@ $('#gRules').oninput = e => { S.rules = e.target.value; save(); };
 document.querySelectorAll('input[name=wheelMode]').forEach(r => r.onchange = () => { S.settings.wheelMode = r.value; save(); });
 document.querySelectorAll('input[name=usedMode]').forEach(r => r.onchange = () => { S.settings.usedMode = r.value; save(); });
 $('#optTimer').onchange = e => { S.settings.timer = Math.max(0, +e.target.value || 0); save(); };
+$('#optReveal').onchange = e => { S.settings.revealSeconds = Math.min(8, Math.max(0.5, +e.target.value || 2.5)); e.target.value = S.settings.revealSeconds; save(); };
+$('#optTimerStart').onchange = e => { S.settings.timerStart = e.target.value; save(); };
+$('#saveNow').onclick = () => {
+  if (!save()) return toast('Could not save in this browser.');
+  if ($('#qText').value.trim()) toast(`Saved. The question in the form isn't added yet: click "${$('#saveQ').textContent}".`);
+  else toast('All changes saved.');
+};
 $('#optSpin').onchange = e => { S.settings.spinSeconds = Math.min(15, Math.max(2, +e.target.value || 5)); e.target.value = S.settings.spinSeconds; save(); };
 $('#optFair').onchange = e => { S.settings.fair = e.target.checked; save(); renderBalance(); };
 $('#optDeduct').onchange = e => { S.settings.deductWrong = e.target.checked; save(); };
 $('#optSound').onchange = e => { S.settings.sound = e.target.checked; save(); };
 $('#optSfx').onchange = e => { S.settings.sfx = e.target.checked; save(); };
 $('#optCelebrate').onchange = e => { S.settings.celebrate = e.target.checked; save(); renderScores && scoreKey && renderScores(); };
+$('#skinTheme').onchange = e => { S.skin.theme = e.target.value; recolorSections(); save(); applySkin(); renderSetup(); };
+$('#skinSub').oninput = e => { S.skin.subtitle = e.target.value; save(); };
+$('#skinWelcome').onchange = e => { S.skin.welcome = e.target.checked; save(); };
+$('#skinWinner').onchange = e => { S.skin.winnerPhoto = e.target.checked; save(); };
+$('#skinBg').onchange = e => { S.skin.bgPhoto = e.target.checked; save(); applySkin(); };
+$('#skinPhotoBtn').onclick = () => $('#skinPhotoFile').click();
+$('#skinPhotoFile').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { const data = await shrinkImage(f, 1920); await IMG.put(SKIN_PHOTO, data); S.skin.photo = true; save(); renderSetup(); applySkin(); toast('Photo added.'); }
+  catch(err){ toast('That photo could not be opened or saved.'); } };
+$('#skinPhotoRemove').onclick = async () => { await IMG.del(SKIN_PHOTO); S.skin.photo = false; save(); renderSetup(); applySkin(); };
 $('#prizeList').addEventListener('change', e => { const id = e.target.dataset.prize; if (!id) return;
   S.settings.prizes = { ...(S.settings.prizes || {}), [id]: e.target.checked }; save(); });
 $('#optVol').oninput = e => { S.settings.volume = +e.target.value; if (master.g) master.g.gain.value = S.settings.volume / 100; save(); };
@@ -666,7 +808,7 @@ function addSection(name){
   name = name.trim(); if (!name) return null;
   const exist = S.sections.find(s => s.name.toLowerCase() === name.toLowerCase()); if (exist) return exist;
   const used = new Set(S.sections.map(s => s.color));
-  const color = PALETTE.find(c => !used.has(c)) || PALETTE[S.sections.length % PALETTE.length];
+  const pal = TH().palette; const color = pal.find(c => !used.has(c)) || pal[S.sections.length % pal.length];
   const s = { id:uid(), name, color }; S.sections.push(s); return s;
 }
 $('#addSec').onclick = () => { if (!$('#secName').value.trim()) return $('#secName').focus();
@@ -758,6 +900,7 @@ $('#csvBtn').onclick = () => {
 $('#exportBtn').onclick = async () => {
   const images = {};
   for (const q of S.questions) if (q.imageId){ const d = await IMG.get(q.imageId); if (d) images[q.imageId] = d; }
+  if (S.skin.photo){ const d = await IMG.get(SKIN_PHOTO); if (d) images[SKIN_PHOTO] = d; }
   const blob = new Blob([JSON.stringify({ ...S, images }, null, 2)], {type:'application/json'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = (S.title || 'game').replace(/[^\w-]+/g,'-').toLowerCase() + '.json'; a.click();
@@ -773,14 +916,30 @@ $('#importFile').onchange = async e => {
   catch(err){ toast('That file is not a Spin Jeopardy game file.'); }
   e.target.value = '';
 };
-$('#sampleBtn').onclick = () => { if (!confirm('Replace the current game with the sample game?')) return; IMG.clear(); S = sampleState(); save(); resetForm(); renderSetup(); };
-$('#clearBtn').onclick = () => { if (!confirm('Delete all sections, questions and players and start blank?')) return; IMG.clear(); S = blankState(); save(); resetForm(); renderSetup(); };
+// keep the skin and family photo when replacing the questions
+async function replaceGame(next){
+  const skin = S.skin, photo = skin.photo ? await IMG.get(SKIN_PHOTO) : null;
+  await IMG.clear(); if (photo) await IMG.put(SKIN_PHOTO, photo);
+  S = next; S.skin = { ...S.skin, ...skin }; recolorSections(); welcomedThisBoard = false;
+  save(); resetForm(); renderSetup(); applySkin();
+}
+$('#sampleBtn').onclick = () => { if (!confirm('Replace the current questions with the sample game? Your skin and photo stay.')) return; replaceGame(sampleState()); };
+$('#clearBtn').onclick = () => { if (!confirm('Delete all sections, questions and players and start blank? Your skin and photo stay.')) return; replaceGame(blankState()); };
 
 /* ================= PLAY ================= */
 const canvas = $('#wheel'), ctx = canvas.getContext('2d');
 let rot = 0, spinning = false, bulbPhase = 0, hl = -1, hlOn = false;
-function flashSlice(i, ms){ hl = i; const t0 = performance.now();
-  (function f(now){ if (hl !== i) return; hlOn = Math.floor((now - t0) / 110) % 2 === 0; draw(); if (now - t0 < ms) requestAnimationFrame(f); })(t0); }
+let glow = 0, dimK = 1;
+function flashSlice(i, ms){ hl = i; hlOn = true; const t0 = performance.now(); let lastB = 0;
+  (function f(now){ if (hl !== i) return; const el = now - t0;
+    glow = 0.5 + 0.5 * Math.sin(el / 1000 * Math.PI * 2 * 1.4 - Math.PI / 2);   // smooth pulse
+    dimK = 1 - 0.6 * Math.min(1, el / 350);                                   // other slices fade back
+    if (el - lastB > 140){ bulbPhase ^= 1; lastB = el; }                      // rim lights chase
+    draw(); if (el < ms) requestAnimationFrame(f); })(t0); }
+function landChime(){ if (!S.settings.sfx) return;
+  try { const a = ac(), t = a.currentTime + 0.02;
+    [1046.5, 1318.5, 1568].forEach((f, k) => { const o = a.createOscillator(), g = a.createGain(); o.type = 'sine'; o.frequency.value = f;
+      env(g, t + k * 0.07, 0.08, 0.005, 1.2); o.connect(g).connect(master()); o.start(t + k * 0.07); o.stop(t + k * 0.07 + 1.3); }); } catch(e){} }
 
 /* ---------- Fair turns ---------- */
 const bracketOf = q => q.double ? 'D' : q.mystery ? 'M' : String(+q.points || 0);
@@ -838,8 +997,8 @@ function segments(){
   }
   // spread "Double your points" slices evenly around the wheel
   const dbl = S.questions.filter(special).map(q => q.double
-      ? { kind:'double', q, used:q.used, blocked:!allowed(q, F), label:'×2', sub:'Double', color:'#ffc940' }
-      : { kind:'mystery', q, used:q.used, blocked:!allowed(q, F), label:'?', sub:'Mystery', color:MYS_COLOR })
+      ? { kind:'double', q, used:q.used, blocked:!allowed(q, F), label:'×2', sub:'Double', color:TH().double }
+      : { kind:'mystery', q, used:q.used, blocked:!allowed(q, F), label:'?', sub:'Mystery', color:mysColor() })
     .filter(g => !remove || !g.used);
   dbl.sort((a, b) => S.questions.filter(special).indexOf(a.q) - S.questions.filter(special).indexOf(b.q));
   const n = base.length;
@@ -868,17 +1027,17 @@ function draw(){
   const segs = segments();
 
   // rim with marquee bulbs
-  ctx.beginPath(); ctx.arc(c, c, R, 0, Math.PI * 2); ctx.fillStyle = '#ffc940'; ctx.fill();
+  const T = TH(); ctx.beginPath(); ctx.arc(c, c, R, 0, Math.PI * 2); ctx.fillStyle = T.rim; ctx.fill();
   const bulbs = Math.max(16, Math.round(size / 26));
   for (let i = 0; i < bulbs; i++){
     const a = (i / bulbs) * Math.PI * 2; const on = (i + bulbPhase) % 2 === 0;
     ctx.beginPath(); ctx.arc(c + Math.cos(a) * (R - rim / 2), c + Math.sin(a) * (R - rim / 2), rim * 0.24, 0, Math.PI * 2);
-    ctx.fillStyle = on ? '#ffffff' : '#b8892a'; ctx.fill();
+    ctx.fillStyle = on ? T.bulb : T.rimDim; ctx.fill();
   }
 
   if (!segs.length){
-    ctx.beginPath(); ctx.arc(c, c, r, 0, Math.PI * 2); ctx.fillStyle = '#17237a'; ctx.fill();
-    ctx.fillStyle = '#aeb6ea'; ctx.font = `600 ${Math.max(13, size*0.035)}px Figtree, 'Noto Nastaliq Urdu', sans-serif`; ctx.textAlign = 'center';
+    ctx.beginPath(); ctx.arc(c, c, r, 0, Math.PI * 2); ctx.fillStyle = T.empty; ctx.fill();
+    ctx.fillStyle = T.emptyText; ctx.font = `600 ${Math.max(13, size*0.035)}px Figtree, 'Noto Nastaliq Urdu', sans-serif`; ctx.textAlign = 'center';
     ctx.fillText(S.questions.length ? 'Every question has been answered' : 'Add questions in Setup', c, c + size * 0.2);
     return;
   }
@@ -886,16 +1045,22 @@ function draw(){
   segs.forEach((g, i) => {
     const start = rot + i * arc - Math.PI / 2;
     ctx.beginPath(); ctx.moveTo(c, c); ctx.arc(c, c, r, start, start + arc); ctx.closePath();
+    const dim = hl >= 0 && i !== hl ? dimK : 1;
     ctx.globalAlpha = g.blocked ? 0.3 : 1;
-    ctx.fillStyle = g.used ? '#373c63' : g.color; ctx.fill(); ctx.globalAlpha = 1;
-    ctx.lineWidth = Math.max(1.5, size * 0.004); ctx.strokeStyle = '#101a5c'; ctx.stroke();
-    if (i === hl && hlOn){ ctx.save(); ctx.lineWidth = Math.max(4, size * 0.012); ctx.strokeStyle = '#ffffff'; ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 18; ctx.stroke(); ctx.restore(); }
+    ctx.fillStyle = g.used ? T.used : g.color; ctx.fill(); ctx.globalAlpha = 1;
+    if (dim < 1){ ctx.fillStyle = `rgba(${T.dim},${(1 - dim) * 1.1})`; ctx.fill(); }
+    ctx.lineWidth = Math.max(1.5, size * 0.004); ctx.strokeStyle = T.line; ctx.stroke();
+    if (i === hl && hlOn){ ctx.save();
+      ctx.globalAlpha = 0.12 + 0.22 * glow; ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(4, size * (0.01 + 0.008 * glow));
+      ctx.strokeStyle = '#fff6d0'; ctx.shadowColor = T.rim; ctx.shadowBlur = size * (0.02 + 0.05 * glow); ctx.stroke(); ctx.stroke();
+      ctx.restore(); }
 
     const mid = start + arc / 2, flip = Math.cos(mid) < 0, k = flip ? -1 : 1;
     ctx.save(); ctx.translate(c, c); ctx.rotate(flip ? mid + Math.PI : mid);
     ctx.textAlign = flip ? 'left' : 'right'; ctx.textBaseline = 'middle';
-    const fg = g.used ? '#7c82a8' : textOn(g.color);
-    ctx.fillStyle = fg; if (g.blocked) ctx.globalAlpha = 0.35;
+    const fg = g.used ? T.usedText : textOn(g.color);
+    ctx.fillStyle = fg; ctx.globalAlpha = (g.blocked ? 0.35 : 1) * dim;
     const chord = arc * r * 0.62; // usable height near rim
     const edge = r - size * 0.03;
     if (g.kind !== 'section'){
@@ -1082,24 +1247,24 @@ function spin(){
     draw();
     if (p < 1) requestAnimationFrame(step);
     else {
-      rot = rot % TAU; spinning = false; bulbPhase = 0; draw();
-      $('#spinBtn').disabled = false; $('#spinBtn').textContent = 'Spin';
-      const g = segs[target];
-      flashSlice(target, 700);
-      setTimeout(() => { hl = -1; draw();
+      rot = rot % TAU; bulbPhase = 0; draw();
+      const g = segs[target], wait = (+S.settings.revealSeconds || 2.5) * 1000;
+      flashSlice(target, wait); landChime();
+      setTimeout(() => { hl = -1; dimK = 1; bulbPhase = 0; draw();
+        spinning = false; $('#spinBtn').disabled = false; $('#spinBtn').textContent = 'Spin';
         if (g.kind === 'question') openQuestion(g.q);
         else if (g.kind === 'double' || g.kind === 'mystery') openQuestion(g.q);
         else { const F = fairState(); let open = S.questions.filter(q => !special(q) && q.sectionId === g.section.id && !q.used);
           const fair = open.filter(q => allowed(q, F)); if (fair.length) open = fair;
           openQuestion(open[Math.floor(Math.random() * open.length)]); }
-      }, 750);
+      }, wait);
     }
   }
   requestAnimationFrame(step);
 }
 $('#spinBtn').onclick = spin;
 document.addEventListener('keydown', e => {
-  if (e.code === 'Space' && !$('#playView').hidden && !document.querySelector('dialog[open]') && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName)){
+  if (e.code === 'Space' && !$('#playView').hidden && !document.querySelector('dialog[open]') && $('#welcome').hidden && $('#winner').hidden && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName)){
     e.preventDefault(); spin(); }
 });
 
@@ -1111,8 +1276,8 @@ function renderPlay(){
   renderScores();
   const secsWithQ = S.sections.filter(s => S.questions.some(q => q.sectionId === s.id));
   $('#legend').innerHTML = (S.settings.wheelMode === 'questions' ? secsWithQ.map(s => `<span><i class="swatch" style="background:${s.color}"></i>${esc(s.name)}</span>`).join('') : '')
-    + (S.questions.some(q => q.double) ? `<span><i class="swatch" style="background:#ffc940"></i>Double your points</span>` : '')
-    + (S.questions.some(q => q.mystery) ? `<span><i class="swatch" style="background:${MYS_COLOR}"></i>Mystery box</span>` : '');
+    + (S.questions.some(q => q.double) ? `<span><i class="swatch" style="background:${TH().double}"></i>Double your points</span>` : '')
+    + (S.questions.some(q => q.mystery) ? `<span><i class="swatch" style="background:${mysColor()}"></i>Mystery box</span>` : '');
   const open = S.questions.filter(q => !q.used).length;
   const regQ = S.questions.filter(q => !special(q)), dblQ = S.questions.filter(q => q.double), mysQ = S.questions.filter(q => q.mystery);
   const mLeft = mysQ.filter(q => !q.used).length;
@@ -1191,7 +1356,8 @@ $('#scoreList').addEventListener('click', e => {
   const t = S.teams.find(x => x.id === b.dataset.adj); t.score += +b.dataset.by; save(); renderPlay();
 });
 $('#skipTurn').onclick = () => { if (!S.teams.length) return; S.turn = (S.turn + 1) % S.teams.length; save(); renderPlay(); };
-$('#resetBoard').onclick = () => { if (!confirm('Mark every question unanswered and set all scores to 0?')) return;
+$('#welcomeBtn').onclick = showWelcome;
+$('#resetBoard').onclick = () => { welcomedThisBoard = false; if (!confirm('Mark every question unanswered and set all scores to 0?')) return;
   S.questions.forEach(q => { q.used = false; delete q.takenBy; }); S.teams.forEach(t => t.score = 0); shown = {}; S.turn = 0; save(); renderPlay(); };
 $('#rulesBtn').onclick = () => { $('#rulesText').textContent = S.rules || 'No rules written yet.'; $('#rulesDialog').showModal(); };
 $('#rulesClose').onclick = () => $('#rulesDialog').close();
@@ -1212,12 +1378,23 @@ function openQuestion(q){
   $('#qdAnsText').textContent = q.answer || '(no answer entered)';
   $('#qdAnswer').hidden = true; $('#qdReveal').hidden = false;
   renderAward();
-  clearInterval(timerId); paused = false; $('#qdPause').textContent = 'Pause';
+  clearInterval(timerId); paused = false; timerStarted = false;
   const T = +S.settings.timer || 0;
   $('#qdTimerWrap').hidden = T === 0;
-  if (T > 0){ timeLeft = T; updateTimer(true); timerId = setInterval(() => { if (paused) return; timeLeft--; updateTimer(); if (timeLeft <= 0){ clearInterval(timerId); Suspense.stop(); buzzer(); toast("Time's up!"); } }, 1000); }
+  if (T > 0){ timeLeft = T; updateTimer(true);
+    if (S.settings.timerStart === 'auto') startTimer();
+    else { $('#qdPause').textContent = '▶ Start timer'; $('#qdPause').classList.add('primary'); $('#qdTimeText').textContent = `${T} seconds, waiting for the host`; } }
   $('#qDialog').showModal();
-  Suspense.start();
+  if (T === 0) Suspense.start();
+}
+let timerStarted = false;
+function startTimer(){
+  timerStarted = true; paused = false;
+  $('#qdPause').textContent = 'Pause'; $('#qdPause').classList.remove('primary');
+  updateTimer(); Suspense.start();
+  clearInterval(timerId);
+  timerId = setInterval(() => { if (paused) return; timeLeft--; updateTimer();
+    if (timeLeft <= 0){ clearInterval(timerId); Suspense.stop(); buzzer(); toast("Time's up!"); } }, 1000);
 }
 function updateTimer(instant){
   const T = +S.settings.timer, bar = $('#qdTimer i');
@@ -1226,7 +1403,7 @@ function updateTimer(instant){
   $('#qdTimer').classList.toggle('low', timeLeft <= Math.min(5, T * 0.25));
   $('#qdTimeText').textContent = timeLeft > 0 ? `${timeLeft} second${timeLeft===1?'':'s'} left` : "Time's up";
 }
-$('#qdPause').onclick = () => { paused = !paused; $('#qdPause').textContent = paused ? 'Resume' : 'Pause';
+$('#qdPause').onclick = () => { if (!timerStarted) return startTimer(); if (timeLeft <= 0) return; paused = !paused; $('#qdPause').textContent = paused ? 'Resume' : 'Pause';
   if (paused) Suspense.stop(); else if ($('#qdAnswer').hidden && timeLeft > 0) Suspense.start(); };
 const doubled = n => n > 0 ? n * 2 : n;
 const halved = n => n > 0 ? Math.round(n / 2) : n;
@@ -1239,7 +1416,7 @@ function renderAward(){
     <button class="btn small good" data-right="${t.id}">${right}</button>
     <button class="btn small bad" data-wrong="${t.id}">${wrong}</button></div>`;
 }
-$('#qdReveal').onclick = () => { Suspense.stop(); $('#qdAnswer').hidden = false; $('#qdReveal').hidden = true; paused = true; $('#qdPause').textContent = 'Resume'; };
+$('#qdReveal').onclick = () => { Suspense.stop(); $('#qdAnswer').hidden = false; $('#qdReveal').hidden = true; paused = true; if (timerStarted) $('#qdPause').textContent = 'Resume'; else $('#qdTimerWrap').hidden = true; };
 $('#qdAward').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || !activeQ) return;
   if (activeMys){ openMystery(S.teams.find(x => x.id === (b.dataset.right || b.dataset.wrong)), !!b.dataset.right); return; }
@@ -1318,7 +1495,7 @@ const FX = {
   init(){ this.cv = $('#fx'); this.x = this.cv.getContext('2d'); this.size(); addEventListener('resize', () => this.size()); },
   size(){ const d = devicePixelRatio || 1; this.cv.width = innerWidth * d; this.cv.height = innerHeight * d; this.x.setTransform(d, 0, 0, d, 0, 0); },
   ok(){ return S.settings.celebrate && !matchMedia('(prefers-reduced-motion: reduce)').matches; },
-  colors:['#ffc940','#2ec4b6','#ff7a59','#a78bfa','#4fc3f7','#ffffff','#f06292','#9ccc65'],
+  get colors(){ return TH().confetti; },
   confetti(x, y, n = 90, power = 11){
     if (!this.ok()) return;
     for (let i = 0; i < n; i++){ const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.9, v = power * (0.45 + Math.random() * 0.75);
@@ -1359,7 +1536,11 @@ function showWinner(){
   $('#wSub').textContent = winners.length > 1 ? `${winners.map(t => t.name).join(' and ')} finish level on ${top} points.` : `with ${top} points`;
   $('#wScores').innerHTML = sorted.map((t, i) => `<div class="wrow ${t.score === top ? 'first' : ''}"><span>${t.score === top ? '👑' : ['🥈','🥉'][i - 1] || '🎖️'}</span>
     <span class="n">${esc(t.name)}</span><span class="sc">${t.score}</span></div>`).join('');
-  $('#winner').hidden = false; $('#wAgain').focus();
+  const wEl = $('#winner'); wEl.style.backgroundImage = ''; wEl.classList.remove('withphoto'); $('#wImg').hidden = true;
+  if (S.skin.photo && S.skin.winnerPhoto) IMG.get(SKIN_PHOTO).then(d => { if (!d || wEl.hidden) return;
+    wEl.classList.add('withphoto'); $('#wImg').src = d; $('#wImg').hidden = false;
+    wEl.style.backgroundImage = `linear-gradient(rgba(0,0,0,.72), rgba(0,0,0,.8)), url(${d})`; });
+  wEl.hidden = false; $('#wAgain').focus();
   if (S.settings.sfx){ try { const a = ac(), t0 = a.currentTime + 0.05;
     [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5].forEach((f, i) => { const o = a.createOscillator(), g = a.createGain();
       o.type = 'triangle'; o.frequency.value = f; const t = t0 + i * 0.16; env(g, t, 0.14, 0.01, i > 3 ? 0.9 : 0.2);
@@ -1371,12 +1552,13 @@ function showWinner(){
 }
 function closeWinner(){ $('#winner').hidden = true; clearInterval(fwTimer); }
 $('#wClose').onclick = closeWinner;
-$('#wAgain').onclick = () => { closeWinner(); S.questions.forEach(q => { q.used = false; delete q.takenBy; }); S.teams.forEach(t => t.score = 0); S.turn = 0; shown = {}; save(); renderPlay(); };
+$('#wAgain').onclick = () => { closeWinner(); welcomedThisBoard = false; S.questions.forEach(q => { q.used = false; delete q.takenBy; }); S.teams.forEach(t => t.score = 0); S.turn = 0; shown = {}; save(); renderPlay(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#winner').hidden) closeWinner(); });
 
 $('#qdImg').onclick = e => e.target.classList.toggle('zoom');
 
 /* init */
+applySkin();
 save(); renderSetup();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
 })();

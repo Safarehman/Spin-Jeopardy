@@ -169,7 +169,19 @@ dialog::backdrop{background:var(--scrim)}
 .ar{font-family:'Amiri','Noto Naskh Arabic','Traditional Arabic',serif;direction:rtl;text-align:right;line-height:2.1}
 textarea.ar{font-size:1.35rem}
 .qar{font-size:clamp(1.6rem,3.6vw,2.4rem);margin:0 0 1.2rem;background:var(--navy);border-radius:12px;padding:.4rem 1rem}
-.qimg{display:block;max-width:100%;max-height:34vh;margin:0 auto 1.2rem;border-radius:12px;cursor:zoom-in;background:#fff}
+.qimgwrap{position:relative;width:fit-content;max-width:100%;margin:0 auto 1.2rem;border-radius:12px;overflow:hidden}
+.qimg{display:block;max-width:100%;max-height:34vh;margin:0 auto;border-radius:12px;cursor:zoom-in;background:#fff}
+.qimgwrap.tiled .qimg{max-height:38vh;cursor:default}
+.tiles{position:absolute;inset:0;display:grid;perspective:900px}
+.tile{display:flex;align-items:center;justify-content:center;background:var(--navy-3);border:1px solid var(--navy);
+  font-family:var(--display);color:var(--gold);font-size:clamp(.8rem,2vw,1.4rem);cursor:pointer;
+  transition:transform .55s cubic-bezier(.3,.1,.3,1), opacity .55s ease;transform-origin:center;backface-visibility:hidden}
+.tile:nth-child(odd){background:var(--navy-2)}
+.tile:hover{filter:brightness(1.25)}
+.tile.gone{transform:rotateY(90deg) scale(.6);opacity:0;pointer-events:none}
+.tilectl{display:flex;gap:.5rem;align-items:center;justify-content:center;flex-wrap:wrap;margin:-.4rem 0 1rem}
+.tilectl span{color:var(--muted);font-size:.9rem}
+.qpoints small{display:block;font-family:var(--body);font-size:.75rem;color:var(--muted);text-align:right}
 .qimg.zoom{max-height:80vh;cursor:zoom-out}
 .imgprev{display:flex;align-items:center;gap:.8rem;margin-top:.6rem}
 .imgprev img{max-height:90px;max-width:160px;border-radius:8px;background:#fff}
@@ -202,7 +214,7 @@ textarea.ar{font-size:1.35rem}
 .mbox{text-align:center;padding:1rem 0 .4rem}
 /* while a Mystery box opens, show only the box and the prize */
 .card.revealing{overflow:hidden}
-.card.revealing .qmeta,.card.revealing .qbody,.card.revealing .qar,.card.revealing .qimg,.card.revealing #qdTimerWrap,
+.card.revealing .qmeta,.card.revealing .qbody,.card.revealing .qar,.card.revealing .qimgwrap,.card.revealing .tilectl,.card.revealing #qdTimerWrap,
 .card.revealing .answer,.card.revealing #qdReveal,.card.revealing #qdPrizeSub:empty{display:none}
 .card.revealing .mbox{padding:1.5rem 0 .5rem}
 .card.revealing .mbox .boxicon{font-size:clamp(6rem,16vh,10rem)}
@@ -352,6 +364,13 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
         <div><label for="optTimerStart">Start the answer timer</label>
           <select id="optTimerStart"><option value="manual">When the host clicks Start timer</option><option value="auto">As soon as the question appears</option></select></div>
       </div>
+      <div class="row">
+        <div><label for="optTileGrid">Tile reveal: number of tiles</label>
+          <select id="optTileGrid"><option value="4x3">12 tiles (4 × 3), quicker</option><option value="5x4">20 tiles (5 × 4)</option><option value="6x5">30 tiles (6 × 5), harder</option></select></div>
+        <div><label for="optTileMode">Tile reveal: how tiles open</label>
+          <select id="optTileMode"><option value="auto">Automatically while the timer runs</option><option value="host">One at a time when the host clicks</option></select></div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="optTileDrop"> Tile reveal: points drop as more tiles open (down to half)</label>
       <label class="toggle"><input type="checkbox" id="optFair"> Fair turns: every team gets the same number of questions from each points value</label>
       <div id="balanceBox"></div>
       <label class="toggle"><input type="checkbox" id="optDeduct"> Wrong answers lose the question's points</label>
@@ -421,6 +440,8 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
           <div><input type="text" id="qImgUrl" placeholder="or paste an image link, https://..." aria-label="Image link"></div>
         </div>
         <div class="imgprev" id="qImgPrev" hidden><img alt="Picture preview"><button class="btn small ghost" id="qImgRemove" type="button">Remove picture</button></div>
+        <div style="margin-top:.6rem"><label for="qReveal">How the picture appears</label>
+          <select id="qReveal"><option value="">Show the whole picture</option><option value="tiles">Tile reveal: covered by tiles that flip away</option></select></div>
       </div>
       <div><label for="qAns">Answer</label><input type="text" id="qAns" dir="auto"></div>
       <div class="row">
@@ -487,7 +508,15 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
     <div class="dbl" id="qdDouble" hidden><strong>Double your points</strong>Right answer doubles your score. Wrong answer halves it.</div>
     <p class="qbody" id="qdBody" dir="auto"></p>
     <p class="ar qar" id="qdAr" hidden></p>
-    <img class="qimg" id="qdImg" alt="Question picture" hidden>
+    <div class="qimgwrap" id="qdImgWrap" hidden>
+      <img class="qimg" id="qdImg" alt="Question picture">
+      <div class="tiles" id="qdTiles" hidden></div>
+    </div>
+    <div class="tilectl" id="qdTileCtl" hidden>
+      <button class="btn small" id="qdTileOne">Reveal a tile</button>
+      <button class="btn small ghost" id="qdTileAll">Reveal all</button>
+      <span id="qdTileInfo"></span>
+    </div>
     <div id="qdTimerWrap">
       <div class="timer" id="qdTimer"><i></i></div>
       <div class="timertext"><span id="qdTimeText"></span><button class="btn small ghost" id="qdPause">Pause</button></div>
@@ -590,7 +619,7 @@ const DEFAULT_RULES =
 
 function blankState(){
   return { title:'Spin Jeopardy', rules:DEFAULT_RULES,
-    settings:{ wheelMode:'questions', usedMode:'gray', timer:30, spinSeconds:5, revealSeconds:2.5, timerStart:'manual', deductWrong:true, sound:true, sfx:true, volume:70, fair:true, celebrate:true, prizes:null },
+    settings:{ wheelMode:'questions', usedMode:'gray', timer:30, spinSeconds:5, revealSeconds:2.5, timerStart:'manual', tileGrid:'5x4', tileMode:'auto', tileDrop:true, deductWrong:true, sound:true, sfx:true, volume:70, fair:true, celebrate:true, prizes:null },
     sections:[], questions:[], teams:[], turn:0,
     skin:{ theme:'show', subtitle:'', photo:false, welcome:true, winnerPhoto:true, bgPhoto:false } };
 }
@@ -724,7 +753,7 @@ function renderSetup(){
   $('#gTitle').value = S.title; $('#gRules').value = S.rules;
   document.querySelectorAll('input[name=wheelMode]').forEach(r => r.checked = r.value === S.settings.wheelMode);
   document.querySelectorAll('input[name=usedMode]').forEach(r => r.checked = r.value === S.settings.usedMode);
-  $('#optTimer').value = S.settings.timer; $('#optSpin').value = S.settings.spinSeconds; $('#optReveal').value = S.settings.revealSeconds; $('#optTimerStart').value = S.settings.timerStart;
+  $('#optTimer').value = S.settings.timer; $('#optSpin').value = S.settings.spinSeconds; $('#optReveal').value = S.settings.revealSeconds; $('#optTimerStart').value = S.settings.timerStart; $('#optTileGrid').value = S.settings.tileGrid; $('#optTileMode').value = S.settings.tileMode; $('#optTileDrop').checked = S.settings.tileDrop;
   $('#optFair').checked = S.settings.fair; renderBalance(); $('#optDeduct').checked = S.settings.deductWrong; $('#optSound').checked = S.settings.sound; $('#optSfx').checked = S.settings.sfx; $('#optCelebrate').checked = S.settings.celebrate; $('#optVol').value = S.settings.volume;
 
   $('#secList').innerHTML = S.sections.length ? S.sections.map(s => {
@@ -755,7 +784,7 @@ function renderSetup(){
   $('#qSummary').textContent = S.questions.length ? `${regs.length} regular, ${dbls.length} Double and ${myss.length} Mystery box questions, ${used} answered, ${regs.reduce((a,q)=>a+(+q.points||0),0)} points on the board.` : '';
   const item = (q, pts) => `<div class="qitem ${q.used?'used':''}">
         <div><div class="pts">${pts}</div><div class="diff">${esc(q.difficulty)}${q.used?'<br>answered':''}</div></div>
-        <div><div class="qtext" dir="auto">${esc(q.text)}</div>${q.arabic ? `<div class="ar">${esc(q.arabic)}</div>` : ''}<div class="ans" dir="auto">Answer: ${esc(q.answer)}</div>${q.imageId || q.imageUrl ? `<img class="thumb" data-thumb="${q.id}" alt="">` : ''}</div>
+        <div><div class="qtext" dir="auto">${esc(q.text)}</div>${q.arabic ? `<div class="ar">${esc(q.arabic)}</div>` : ''}<div class="ans" dir="auto">Answer: ${esc(q.answer)}</div>${q.imageId || q.imageUrl ? `<img class="thumb" data-thumb="${q.id}" alt="">${q.reveal === 'tiles' ? '<div class="diff">🧩 Tile reveal</div>' : ''}` : ''}</div>
         <div class="acts"><button class="btn small" data-editq="${q.id}">Edit</button><button class="btn small ghost" data-delq="${q.id}" aria-label="Delete question">Delete</button></div>
       </div>`;
   $('#qList').innerHTML = S.sections.map(s => {
@@ -777,6 +806,9 @@ document.querySelectorAll('input[name=usedMode]').forEach(r => r.onchange = () =
 $('#optTimer').onchange = e => { S.settings.timer = Math.max(0, +e.target.value || 0); save(); };
 $('#optReveal').onchange = e => { S.settings.revealSeconds = Math.min(8, Math.max(0.5, +e.target.value || 2.5)); e.target.value = S.settings.revealSeconds; save(); };
 $('#optTimerStart').onchange = e => { S.settings.timerStart = e.target.value; save(); };
+$('#optTileGrid').onchange = e => { S.settings.tileGrid = e.target.value; save(); };
+$('#optTileMode').onchange = e => { S.settings.tileMode = e.target.value; save(); };
+$('#optTileDrop').onchange = e => { S.settings.tileDrop = e.target.checked; save(); };
 $('#saveNow').onclick = () => {
   if (!save()) return toast('Could not save in this browser.');
   if ($('#qText').value.trim()) toast(`Saved. The question in the form isn't added yet: click "${$('#saveQ').textContent}".`);
@@ -834,7 +866,7 @@ $('#setupView').addEventListener('click', e => {
   if (b.dataset.editq){ const q = S.questions.find(x => x.id === b.dataset.editq); editingId = q.id;
     $('#qType').value = q.double ? 'double' : q.mystery ? 'mystery' : 'regular'; syncType();
     if (!special(q)) $('#qSec').value = q.sectionId; $('#qDiff').value = DIFFS.includes(q.difficulty) ? q.difficulty : 'Medium'; $('#qPts').value = q.points; $('#qText').value = q.text; $('#qAns').value = q.answer; $('#qAr').value = q.arabic || '';
-    $('#qImgUrl').value = q.imageUrl || ''; formImg = q.imageId ? { id:q.imageId } : null;
+    $('#qImgUrl').value = q.imageUrl || ''; formImg = q.imageId ? { id:q.imageId } : null; $('#qReveal').value = q.reveal || '';
     imgSrc(q).then(src => { if (editingId === q.id) showPreview(src); });
     $('#qFormTitle').textContent = 'Edit question'; $('#saveQ').textContent = 'Save changes'; $('#cancelEdit').hidden = false;
     $('#qFormTitle').scrollIntoView({behavior:'smooth', block:'start'}); $('#qText').focus(); }
@@ -851,7 +883,7 @@ $('#qImgFile').onchange = async e => { const f = e.target.files[0]; e.target.val
   catch(err){ toast('That file could not be opened as a picture.'); } };
 $('#qImgUrl').oninput = e => { const u = e.target.value.trim(); if (u) { formImg = null; showPreview(u); } else showPreview(null); };
 $('#qImgRemove').onclick = () => { formImg = null; $('#qImgUrl').value = ''; showPreview(null); };
-function resetForm(){ editingId = null; $('#qText').value=''; $('#qAns').value=''; $('#qAr').value=''; $('#qImgUrl').value=''; formImg = null; showPreview(null);
+function resetForm(){ editingId = null; $('#qReveal').value = ''; $('#qText').value=''; $('#qAns').value=''; $('#qAr').value=''; $('#qImgUrl').value=''; formImg = null; showPreview(null);
   $('#qFormTitle').textContent = 'Add a question'; $('#saveQ').textContent = 'Add question'; $('#cancelEdit').hidden = true; }
 $('#cancelEdit').onclick = resetForm;
 $('#saveQ').onclick = async () => {
@@ -865,7 +897,7 @@ $('#saveQ').onclick = async () => {
     if (formImg.id) imageId = formImg.id;
     else { imageId = uid(); try { await IMG.put(imageId, formImg.data); } catch(e){ toast('The picture could not be saved in this browser.'); imageId = null; } }
   }
-  const pic = { arabic, imageUrl, imageId };
+  const pic = { arabic, imageUrl, imageId, reveal: (imageUrl || imageId) ? $('#qReveal').value : '' };
   const data = qt !== 'regular' ? { double:isDouble, mystery:isMys, sectionId:null, difficulty:$('#qDiff').value, points:0, text, answer, ...pic }
     : { double:false, mystery:false, sectionId:$('#qSec').value, difficulty:$('#qDiff').value, points:Math.max(0, +$('#qPts').value || 0), text, answer, ...pic };
   if (editingId){ const q = S.questions.find(q => q.id === editingId);
@@ -1373,8 +1405,9 @@ function openQuestion(q){
   $('#qdDiff').textContent = q.difficulty; $('#qdPts').textContent = activeDouble ? '×2' : activeMys ? '🎁 ?' : q.points; $('#qdDouble').hidden = !activeDouble;
   $('#qdBody').textContent = q.text;
   $('#qdAr').textContent = q.arabic || ''; $('#qdAr').hidden = !q.arabic;
-  const im = $('#qdImg'); im.hidden = true; im.classList.remove('zoom'); im.removeAttribute('src');
-  imgSrc(q).then(src => { if (src && activeQ === q){ im.src = src; im.hidden = false; } });
+  const im = $('#qdImg'), wrap = $('#qdImgWrap'); wrap.hidden = true; im.classList.remove('zoom'); im.removeAttribute('src');
+  Tiles.setup(q); wrap.classList.toggle('tiled', Tiles.on);
+  imgSrc(q).then(src => { if (src && activeQ === q){ im.src = src; wrap.hidden = false; } else if (activeQ === q) Tiles.cancel(); });
   $('#qdAnsText').textContent = q.answer || '(no answer entered)';
   $('#qdAnswer').hidden = true; $('#qdReveal').hidden = false;
   renderAward();
@@ -1385,13 +1418,13 @@ function openQuestion(q){
     if (S.settings.timerStart === 'auto') startTimer();
     else { $('#qdPause').textContent = '▶ Start timer'; $('#qdPause').classList.add('primary'); $('#qdTimeText').textContent = `${T} seconds, waiting for the host`; } }
   $('#qDialog').showModal();
-  if (T === 0) Suspense.start();
+  if (T === 0){ Suspense.start(); Tiles.start(); }
 }
 let timerStarted = false;
 function startTimer(){
   timerStarted = true; paused = false;
   $('#qdPause').textContent = 'Pause'; $('#qdPause').classList.remove('primary');
-  updateTimer(); Suspense.start();
+  updateTimer(); Suspense.start(); Tiles.start();
   clearInterval(timerId);
   timerId = setInterval(() => { if (paused) return; timeLeft--; updateTimer();
     if (timeLeft <= 0){ clearInterval(timerId); Suspense.stop(); buzzer(); toast("Time's up!"); } }, 1000);
@@ -1410,24 +1443,77 @@ const halved = n => n > 0 ? Math.round(n / 2) : n;
 function renderAward(){
   if (!S.teams.length){ $('#qdAward').innerHTML = ''; return; }
   const t = S.teams[S.turn % S.teams.length];
-  const right = activeMys ? 'Correct: open the box!' : activeDouble ? `Correct: ${t.score} → ${doubled(t.score)}` : `Correct +${activeQ.points}`;
-  const wrong = activeMys ? 'Wrong: box stays shut' : activeDouble ? `Wrong: ${t.score} → ${halved(t.score)}` : `Wrong${S.settings.deductWrong ? ' −' + activeQ.points : ''}`;
+  const right = activeMys ? 'Correct: open the box!' : activeDouble ? `Correct: ${t.score} → ${doubled(t.score)}` : `Correct +${Tiles.points()}`;
+  const wrong = activeMys ? 'Wrong: box stays shut' : activeDouble ? `Wrong: ${t.score} → ${halved(t.score)}` : `Wrong${S.settings.deductWrong ? ' −' + Tiles.points() : ''}`;
   $('#qdAward').innerHTML = `<div class="arow"><span>${esc(t.name)}</span>
     <button class="btn small good" data-right="${t.id}">${right}</button>
     <button class="btn small bad" data-wrong="${t.id}">${wrong}</button></div>`;
 }
-$('#qdReveal').onclick = () => { Suspense.stop(); $('#qdAnswer').hidden = false; $('#qdReveal').hidden = true; paused = true; if (timerStarted) $('#qdPause').textContent = 'Resume'; else $('#qdTimerWrap').hidden = true; };
+$('#qdReveal').onclick = () => { Suspense.stop(); Tiles.all(); $('#qdAnswer').hidden = false; $('#qdReveal').hidden = true; paused = true; if (timerStarted) $('#qdPause').textContent = 'Resume'; else $('#qdTimerWrap').hidden = true; };
 $('#qdAward').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || !activeQ) return;
   if (activeMys){ openMystery(S.teams.find(x => x.id === (b.dataset.right || b.dataset.wrong)), !!b.dataset.right); return; }
   if (b.dataset.right){ const t = S.teams.find(x => x.id === b.dataset.right);
     if (activeDouble){ t.score = doubled(t.score); toast(`${t.name} doubled to ${t.score}`); }
-    else { t.score += +activeQ.points; toast(`${t.name} +${activeQ.points}`); } Suspense.stop(); applause(); finishQuestion(true); }
+    else { const pts = Tiles.points(); t.score += pts; toast(`${t.name} +${pts}`); } Suspense.stop(); applause(); finishQuestion(true); }
   if (b.dataset.wrong){ const t = S.teams.find(x => x.id === b.dataset.wrong); Suspense.stop(); clearInterval(timerId); boo();
     if (activeDouble){ t.score = halved(t.score); toast(`${t.name} halved to ${t.score}`); }
-    else if (S.settings.deductWrong){ t.score -= +activeQ.points; toast(`${t.name} −${activeQ.points}`); } else toast(`${t.name}: wrong`);
+    else if (S.settings.deductWrong){ const pts = Tiles.points(); t.score -= pts; toast(`${t.name} −${pts}`); } else toast(`${t.name}: wrong`);
     b.disabled = true; b.previousElementSibling.disabled = true; save(); renderPlay(); }
 });
+/* ---------- Tile reveal ---------- */
+const Tiles = {
+  on:false, n:0, order:[], shown:0, id:null, base:0, drop:false,
+  setup(q){
+    this.stop(); const box = $('#qdTiles');
+    this.on = q.reveal === 'tiles' && !!(q.imageId || q.imageUrl);
+    box.hidden = !this.on; $('#qdTileCtl').hidden = !this.on; box.innerHTML = '';
+    this.base = +q.points || 0; this.drop = this.on && S.settings.tileDrop && !special(q);
+    if (!this.on) return;
+    const [c, r] = (S.settings.tileGrid || '5x4').split('x').map(Number); this.n = c * r;
+    box.style.gridTemplateColumns = `repeat(${c},1fr)`; box.style.gridTemplateRows = `repeat(${r},1fr)`;
+    box.innerHTML = Array.from({ length:this.n }, (_, i) => `<div class="tile" data-i="${i}">${i + 1}</div>`).join('');
+    this.order = [...Array(this.n).keys()].sort(() => Math.random() - 0.5); this.shown = 0;
+    this.flip(true); // one free tile as a hint
+  },
+  flip(quiet){
+    if (!this.on || this.shown >= this.n) return false;
+    $('#qdTiles').children[this.order[this.shown++]].classList.add('gone');
+    if (!quiet) tileSound(); this.changed(); return true;
+  },
+  flipAt(i){ const pos = this.order.indexOf(i); if (pos < this.shown) return;
+    [this.order[pos], this.order[this.shown]] = [this.order[this.shown], this.order[pos]]; this.flip(); },
+  all(){ clearInterval(this.id); const go = () => { if (this.flip(true)) setTimeout(go, 35); }; if (this.on){ tileSound(); go(); } },
+  start(){
+    if (!this.on || S.settings.tileMode !== 'auto' || this.shown >= this.n) return;
+    clearInterval(this.id); const T = +S.settings.timer || 0;
+    const total = (T > 0 ? T * 0.85 : Math.max(10, this.n * 1.2)) * 1000, left = this.n - this.shown;
+    this.id = setInterval(() => { if (paused) return; if (!this.flip()) clearInterval(this.id); }, total / Math.max(1, left));
+  },
+  stop(){ clearInterval(this.id); },
+  cancel(){ this.stop(); this.on = false; $('#qdTileCtl').hidden = true; },
+  points(){
+    if (!this.drop) return activeQ ? +activeQ.points || 0 : 0;
+    const frac = (this.shown - 1) / Math.max(1, this.n - 1);
+    return Math.max(Math.round(this.base * 0.5 / 10) * 10, Math.round(this.base * (1 - 0.5 * frac) / 10) * 10);
+  },
+  changed(){
+    $('#qdTileInfo').textContent = `${this.shown} of ${this.n} tiles open`;
+    if (!this.drop) return;
+    const p = this.points();
+    $('#qdPts').innerHTML = `${p}<small>${p < this.base ? `was ${this.base}` : 'drops as tiles open'}</small>`;
+    const r = document.querySelector('#qdAward [data-right]'); if (r) r.textContent = `Correct +${p}`;
+    const w = document.querySelector('#qdAward [data-wrong]'); if (w && S.settings.deductWrong) w.textContent = `Wrong −${p}`;
+  }
+};
+function tileSound(){ if (!S.settings.sfx) return;
+  try { const a = ac(), t = a.currentTime + 0.01, o = a.createOscillator(), g = a.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(980, t + 0.09);
+    env(g, t, 0.12, 0.004, 0.12); o.connect(g).connect(master()); o.start(t); o.stop(t + 0.2); } catch(e){} }
+$('#qdTileOne').onclick = () => Tiles.flip();
+$('#qdTileAll').onclick = () => Tiles.all();
+$('#qdTiles').addEventListener('click', e => { const t = e.target.closest('.tile'); if (t) Tiles.flipAt(+t.dataset.i); });
+
 /* ---------- Mystery box ---------- */
 let mysExtraSpin = false;
 function pickPrize(){
@@ -1477,7 +1563,7 @@ function drumroll(sec){
 
 function finishQuestion(markUsed, keepTurn = false){
   if (resolved) return; resolved = true;
-  clearInterval(timerId); Suspense.stop();
+  clearInterval(timerId); Suspense.stop(); Tiles.stop();
   if (activeQ && markUsed){ activeQ.used = true; activeQ.takenBy = S.teams.length ? S.teams[S.turn % S.teams.length].id : null;
     if (S.teams.length && !keepTurn) S.turn = (S.turn + 1) % S.teams.length;
     if (keepTurn) setTimeout(() => toast(`${S.teams[S.turn].name} gets a free extra spin!`), 400); }
@@ -1555,7 +1641,7 @@ $('#wClose').onclick = closeWinner;
 $('#wAgain').onclick = () => { closeWinner(); welcomedThisBoard = false; S.questions.forEach(q => { q.used = false; delete q.takenBy; }); S.teams.forEach(t => t.score = 0); S.turn = 0; shown = {}; save(); renderPlay(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#winner').hidden) closeWinner(); });
 
-$('#qdImg').onclick = e => e.target.classList.toggle('zoom');
+$('#qdImg').onclick = e => { if (!Tiles.on) e.target.classList.toggle('zoom'); };
 
 /* init */
 applySkin();

@@ -248,6 +248,13 @@ textarea.ar{font-size:1.35rem}
   background:var(--bar-bg);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:14px;padding:.7rem 1rem;margin-bottom:.5rem}
 .savebar span{color:var(--muted);font-size:.92rem;flex:1;min-width:12rem}
 .savebar span b{color:var(--good)}
+.plist{list-style:none;margin:.8rem 0 0;padding:0;display:flex;flex-direction:column;gap:.45rem}
+.plist li{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;background:var(--navy);border-radius:10px;padding:.55rem .7rem}
+.plist li.current{outline:2px solid var(--gold)}
+.plist .pinfo{flex:1;min-width:10rem}
+.plist .pname{font-weight:800;overflow-wrap:anywhere}
+.plist .pmeta{color:var(--muted);font-size:.85rem}
+.plist .acts{display:flex;gap:.3rem;flex-wrap:wrap}
 .rulestext{white-space:pre-wrap;font-size:1.05rem}
 
 .toast{position:fixed;left:50%;bottom:calc(5.5rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--gold);color:var(--navy);
@@ -318,6 +325,16 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
 <!-- ============ SETUP ============ -->
 <section id="setupView" class="setup" role="tabpanel" aria-labelledby="tabSetup">
   <div>
+    <div class="panel">
+      <h2>Presets</h2>
+      <p class="hint">Save the whole game (questions, pictures, players, options and skin) under a name, and load it back any time. Scores and answered questions are reset in the saved copy.</p>
+      <div class="row">
+        <div><label for="presetName">Preset name</label><input type="text" id="presetName" maxlength="60" dir="auto" placeholder="Eid 2026 family quiz"></div>
+        <button class="btn primary shrink" id="presetSave">Save as preset</button>
+      </div>
+      <ul class="plist" id="presetList"></ul>
+    </div>
+
     <div class="panel stack">
       <h2>Game</h2>
       <div><label for="gTitle">Game title</label><input type="text" id="gTitle" maxlength="60"></div>
@@ -929,15 +946,89 @@ $('#csvBtn').onclick = () => {
   toast(added ? `Added ${added} question${added===1?'':'s'}${skipped?`, skipped ${skipped} line${skipped===1?'':'s'}`:''}.` : 'No lines matched the format Section, Question, Answer, Difficulty, Points.');
 };
 
-$('#exportBtn').onclick = async () => {
+async function gatherImages(game){
   const images = {};
-  for (const q of S.questions) if (q.imageId){ const d = await IMG.get(q.imageId); if (d) images[q.imageId] = d; }
-  if (S.skin.photo){ const d = await IMG.get(SKIN_PHOTO); if (d) images[SKIN_PHOTO] = d; }
-  const blob = new Blob([JSON.stringify({ ...S, images }, null, 2)], {type:'application/json'});
+  for (const q of game.questions) if (q.imageId){ const d = await IMG.get(q.imageId); if (d) images[q.imageId] = d; }
+  if (game.skin && game.skin.photo){ const d = await IMG.get(SKIN_PHOTO); if (d) images[SKIN_PHOTO] = d; }
+  return images;
+}
+function downloadGame(game, images, name){
+  const blob = new Blob([JSON.stringify({ ...game, images }, null, 2)], {type:'application/json'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = (S.title || 'game').replace(/[^\w-]+/g,'-').toLowerCase() + '.json'; a.click();
+  a.download = (name || 'game').replace(/[^\w\u0600-\u06FF-]+/g,'-').toLowerCase() + '.json'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+$('#exportBtn').onclick = async () => downloadGame(S, await gatherImages(S), S.title);
+
+/* ---------- Presets (kept in this browser's IndexedDB) ---------- */
+const PDB = {
+  db:null,
+  open(){ if (this.db) return Promise.resolve(this.db);
+    return new Promise((res, rej) => { const r = indexedDB.open('spinJeopardyPresets', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('p', { keyPath:'id' });
+      r.onsuccess = () => { this.db = r.result; res(this.db); }; r.onerror = () => rej(r.error); }); },
+  async run(mode, fn){ const db = await this.open();
+    return new Promise((res, rej) => { const t = db.transaction('p', mode); const req = fn(t.objectStore('p'));
+      t.oncomplete = () => res(req && req.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); }); },
+  all(){ return this.run('readonly', st => st.getAll()); },
+  get(id){ return this.run('readonly', st => st.get(id)); },
+  put(rec){ return this.run('readwrite', st => st.put(rec)); },
+  del(id){ return this.run('readwrite', st => st.delete(id)); }
 };
+let currentPreset = null;
+function cleanGame(){
+  const g = JSON.parse(JSON.stringify(S));
+  g.questions.forEach(q => { q.used = false; delete q.takenBy; });
+  g.teams.forEach(t => t.score = 0); g.turn = 0;
+  return g;
+}
+async function renderPresets(){
+  let list = [];
+  try { list = (await PDB.all()) || []; } catch(e){ $('#presetList').innerHTML = '<li class="empty">Presets are not available in this browser (private browsing?).</li>'; return; }
+  list.sort((a, b) => b.savedAt - a.savedAt);
+  $('#presetList').innerHTML = list.length ? list.map(p => {
+    const when = new Date(p.savedAt).toLocaleString([], { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+    return `<li class="${p.id === currentPreset ? 'current' : ''}">
+      <div class="pinfo"><div class="pname" dir="auto">${esc(p.name)}</div>
+        <div class="pmeta">${p.qCount} question${p.qCount===1?'':'s'}, ${p.picCount} picture${p.picCount===1?'':'s'}, saved ${esc(when)}${p.id === currentPreset ? ', loaded now' : ''}</div></div>
+      <div class="acts"><button class="btn small primary" data-pload="${p.id}">Load</button>
+        <button class="btn small" data-pdl="${p.id}">Download</button>
+        <button class="btn small ghost" data-pdel="${p.id}" aria-label="Delete preset ${esc(p.name)}">Delete</button></div></li>`; }).join('')
+    : '<li class="empty">No presets yet. Give this game a name and click Save as preset.</li>';
+}
+$('#presetSave').onclick = async () => {
+  const name = $('#presetName').value.trim();
+  if (!name){ toast('Give the preset a name first.'); return $('#presetName').focus(); }
+  if (!S.questions.length && !confirm('This game has no questions yet. Save it as a preset anyway?')) return;
+  try {
+    const list = (await PDB.all()) || [];
+    const same = list.find(p => p.name.toLowerCase() === name.toLowerCase());
+    if (same && !confirm(`A preset called "${same.name}" already exists. Replace it with the current game?`)) return;
+    const game = cleanGame(), images = await gatherImages(game);
+    const rec = { id: same ? same.id : uid(), name, savedAt: Date.now(), game, images,
+      qCount: game.questions.length, picCount: Object.keys(images).length };
+    await PDB.put(rec); currentPreset = rec.id; $('#presetName').value = '';
+    toast(same ? `Preset "${name}" updated.` : `Saved as preset "${name}".`); renderPresets();
+  } catch(e){ toast('Could not save the preset. The browser storage may be full.'); }
+};
+$('#presetName').onkeydown = e => { if (e.key === 'Enter') $('#presetSave').click(); };
+$('#presetList').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  try {
+    if (b.dataset.pload){
+      const p = await PDB.get(b.dataset.pload); if (!p) return renderPresets();
+      if (!confirm(`Load "${p.name}"? It replaces the game you have open now, including its scores. Save the current game as a preset first if you want to keep it.`)) return;
+      await IMG.clear();
+      for (const [id, data] of Object.entries(p.images || {})) await IMG.put(id, data);
+      S = normalize(JSON.parse(JSON.stringify(p.game))); currentPreset = p.id; welcomedThisBoard = false;
+      save(); resetForm(); renderSetup(); applySkin(); renderPresets(); toast(`Loaded "${p.name}".`);
+    }
+    if (b.dataset.pdl){ const p = await PDB.get(b.dataset.pdl); if (p) downloadGame(p.game, p.images, p.name); }
+    if (b.dataset.pdel){ const p = await PDB.get(b.dataset.pdel); if (!p) return;
+      if (!confirm(`Delete the preset "${p.name}"? The game you have open now is not affected.`)) return;
+      await PDB.del(p.id); if (currentPreset === p.id) currentPreset = null; renderPresets(); toast('Preset deleted.'); }
+  } catch(err){ toast('Something went wrong with the preset storage.'); }
+});
 $('#importBtn').onclick = () => $('#importFile').click();
 $('#importFile').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
@@ -1645,6 +1736,7 @@ $('#qdImg').onclick = e => { if (!Tiles.on) e.target.classList.toggle('zoom'); }
 
 /* init */
 applySkin();
+renderPresets();
 save(); renderSetup();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
 })();

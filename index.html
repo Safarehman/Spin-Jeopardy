@@ -286,6 +286,9 @@ textarea.ar{font-size:1.35rem}
 .plist .pname{font-weight:800;overflow-wrap:anywhere}
 .plist .pmeta{color:var(--muted);font-size:.85rem}
 .plist .acts{display:flex;gap:.3rem;flex-wrap:wrap}
+.previewbar{background:#3a2a6b;color:#fff;border-radius:10px;padding:.45rem .8rem;margin-bottom:.9rem;font-weight:700;font-size:.92rem}
+#wheel.testing{cursor:pointer}
+.btn.on{background:#7c3aed;color:#fff}
 .rulestext{white-space:pre-wrap;font-size:1.05rem}
 
 .toast{position:fixed;left:50%;bottom:calc(5.5rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--gold);color:var(--navy);
@@ -358,12 +361,24 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
 <section id="setupView" class="setup" role="tabpanel" aria-labelledby="tabSetup">
   <div>
     <div class="panel">
+      <h2>Built-in games</h2>
+      <p class="hint">Ready-made games that come with Phirki. Each has 4 sections of 5 questions (100 to 500), 2 Double and 2 Mystery box questions. Loading one keeps your skin and photo.</p>
+      <ul class="plist" id="builtinList"></ul>
+    </div>
+
+    <div class="panel">
       <h2>Presets</h2>
       <p class="hint">Save the whole game (questions, pictures, players, options and skin) under a name, and load it back any time. Scores and answered questions are reset in the saved copy.</p>
       <div class="row">
         <div><label for="presetName">Preset name</label><input type="text" id="presetName" maxlength="60" dir="auto" placeholder="Eid 2026 family quiz"></div>
         <button class="btn primary shrink" id="presetSave">Save as preset</button>
       </div>
+      <div class="row" style="margin-top:.8rem">
+        <button class="btn shrink" id="presetUpBtn">Upload preset file</button>
+        <button class="btn ghost shrink" id="presetDlAll">Download all presets</button>
+        <input type="file" id="presetUpFile" accept=".json,application/json" multiple hidden>
+      </div>
+      <p class="hint" style="margin:.5rem 0 0">Upload adds a downloaded preset or game file to this list without changing the game you have open. You can pick several files at once.</p>
       <ul class="plist" id="presetList"></ul>
     </div>
 
@@ -542,6 +557,7 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
       <button class="btn ghost" id="skipTurn">Next player's turn</button>
       <button class="btn ghost" id="resetBoard">Reset board and scores</button>
       <button class="btn ghost" id="welcomeBtn">Intro and welcome</button>
+      <button class="btn ghost" id="testBtn" title="Tap any slice to preview its question without spinning or scoring">Test mode</button>
     </div>
   </aside>
 </section>
@@ -555,6 +571,7 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
       <span class="tag" id="qdDiff" style="background:var(--navy);color:var(--muted)"></span>
       <span class="qpoints" id="qdPts"></span>
     </div>
+    <div class="previewbar" id="qdPreview" hidden>🧪 Preview: nothing is scored and the question stays on the wheel.</div>
     <div class="dbl mys" id="qdMysBanner" hidden><strong>🎁 Mystery box</strong>Answer correctly to open the box and win a surprise prize.</div>
     <div class="dbl" id="qdDouble" hidden><strong>Double your points</strong>Right answer doubles your score. Wrong answer halves it.</div>
     <p class="qbody" id="qdBody" dir="auto"></p>
@@ -689,21 +706,18 @@ function blankState(){
     sections:[], questions:[], teams:[], turn:0,
     skin:{ theme:'show', subtitle:'', photo:false, welcome:true, winnerPhoto:true, bgPhoto:false, intro:true, introOpen:false } };
 }
-function sampleState(){
-  const s = blankState(); s.title = 'Family Quiz Night';
-  const add = (name, qs) => { const id = uid(); s.sections.push({id, name, color:PALETTE[s.sections.length % PALETTE.length]});
-    qs.forEach(([t,a,d]) => s.questions.push({id:uid(), sectionId:id, text:t, answer:a, difficulty:d, points:DIFF_PTS[d], used:false})); };
-  add('Geography', [['What is the capital of Canada?','Ottawa','Very easy'],['Which ocean lies between Africa and Australia?','Indian Ocean','Easy'],['Which river is the longest in the world?','The Nile (some measures say the Amazon)','Medium'],['Which country has the most natural lakes?','Canada','Hard'],['Which country has the most time zones, counting its overseas territories?','France (12)','Very hard']]);
-  add('Science', [['Which planet is known as the Red Planet?','Mars','Very easy'],['What gas do plants absorb from the air?','Carbon dioxide','Easy'],['What is the chemical symbol for gold?','Au','Medium'],['What is the hardest natural substance?','Diamond','Hard'],['What is the most abundant gas in Earth\'s atmosphere?','Nitrogen','Very hard']]);
-  add('Food', [['Which fruit is dried to make raisins?','Grapes','Very easy'],['Which spice gives biryani its yellow colour?','Saffron (or turmeric)','Easy'],['Which country is famous for sushi?','Japan','Medium'],['Saffron comes from which part of a flower?','The stigma','Hard'],['Which nut is used to make marzipan?','Almond','Very hard']]);
-  add('Numbers', [['How many days are in a leap year?','366','Very easy'],['How many sides does a hexagon have?','Six','Easy'],['What is 15% of 200?','30','Medium'],['What is the square root of 169?','13','Hard'],['How many seconds are in a day?','86,400','Very hard']]);
-  s.questions.push({id:uid(), double:true, sectionId:null, text:'What is the largest desert in the world?', answer:'Antarctica (the largest hot desert is the Sahara)', difficulty:'Hard', points:0, used:false});
-  s.questions.push({id:uid(), double:true, sectionId:null, text:'How many bones are in the adult human body?', answer:'206', difficulty:'Hard', points:0, used:false});
-  s.questions.push({id:uid(), mystery:true, sectionId:null, text:'Which is the longest river in Pakistan?', answer:'The Indus', difficulty:'Medium', points:0, used:false});
-  s.questions.push({id:uid(), mystery:true, sectionId:null, text:'How many players are on a cricket team on the field?', answer:'11', difficulty:'Easy', points:0, used:false});
-  s.teams = [{id:uid(), name:'Team A', score:0},{id:uid(), name:'Team B', score:0}];
+const BUILT_INS = [{"id": "family", "name": "Family Quiz Night", "title": "Family Quiz Night", "desc": "Quran, Islam, Science and Sports", "sections": [["Quran", [["How many surahs are in the Quran?", "114"], ["Which surah is the opening chapter of the Quran?", "Surah Al-Fatiha"], ["What is the longest surah in the Quran?", "Surah Al-Baqarah (286 ayat)"], ["Which surah does not begin with Bismillah?", "Surah At-Tawbah (Surah 9)"], ["Which is the only surah that contains Bismillah twice?", "Surah An-Naml (Surah 27): at the start and in ayah 30"]]], ["Islam", [["How many pillars of Islam are there?", "Five"], ["In which city is Masjid an-Nabawi, the Prophet's ﷺ mosque?", "Madinah"], ["Which angel brought the revelation to the Prophet ﷺ?", "Jibreel (Gabriel) (AS)"], ["The Islamic calendar is called the Hijri calendar. Which event marks its first year?", "The Hijrah: the Prophet's ﷺ migration from Makkah to Madinah"], ["What are the first and last months of the Islamic calendar?", "Muharram (first) and Dhul-Hijjah (last)"]]], ["Science", [["What is H₂O more commonly called?", "Water"], ["Which planet is known as the Red Planet?", "Mars"], ["What gas do plants absorb from the air to make food?", "Carbon dioxide"], ["What is the hardest natural substance?", "Diamond"], ["Roughly how fast does light travel?", "About 300,000 km per second"]]], ["Sports", [["How many players does a soccer team have on the field?", "11"], ["In cricket, how many balls are bowled in an over?", "6"], ["How often are the Summer Olympic Games held?", "Every four years"], ["Which country won the 1992 Cricket World Cup?", "Pakistan"], ["What is the maximum break in snooker?", "147"]]]], "doubles": [["Who was the first muezzin in Islam?", "Bilal ibn Rabah (RA)", "Hard"], ["What is the largest planet in our solar system?", "Jupiter", "Hard"]], "mysteries": [["Which country hosted the 2022 FIFA World Cup?", "Qatar", "Medium"], ["Which Prophet built the Kaaba together with his son?", "Ibrahim (AS), with Ismail (AS)", "Medium"]]}, {"id": "quran", "name": "Quran and Seerah", "title": "Quran and Seerah Quiz", "desc": "Quran, Prophets, Seerah and Islamic History", "sections": [["Quran", [["In which language was the Quran revealed?", "Arabic"], ["Into how many juz (paras) is the Quran divided?", "30"], ["Over about how many years was the Quran revealed?", "About 23 years"], ["What is the shortest surah in the Quran?", "Surah Al-Kawthar (3 short ayat, the fewest words of any surah)"], ["Which surah is named after the bee?", "Surah An-Nahl (Surah 16)"]]], ["Prophets", [["Which Prophet built the Ark?", "Nuh (AS)"], ["Which Prophet was swallowed by a huge fish?", "Yunus (AS)"], ["Which Prophet was thrown into a fire that Allah made cool and safe?", "Ibrahim (AS)"], ["Which Prophet could understand the speech of animals and ruled a great kingdom?", "Sulaiman (AS)"], ["How many Prophets are mentioned by name in the Quran?", "25"]]], ["Seerah", [["In which city was the Prophet Muhammad ﷺ born?", "Makkah"], ["What was the name of the Prophet's ﷺ mother?", "Aminah"], ["Who was the Prophet's ﷺ first wife?", "Khadijah (RA)"], ["In which cave did the first revelation come?", "Cave Hira"], ["What was the first major battle in Islam?", "The Battle of Badr (2 AH)"]]], ["Islamic History", [["Towards which building do Muslims face when they pray?", "The Kaaba in Makkah"], ["Who was the first caliph after the Prophet ﷺ?", "Abu Bakr as-Siddiq (RA)"], ["Which city was the first qiblah of the Muslims?", "Jerusalem (Masjid al-Aqsa)"], ["Which caliph sent standard copies of the Quran to the major cities?", "Uthman ibn Affan (RA)"], ["In which year CE did the Hijrah take place?", "622 CE"]]]], "doubles": [["Which surah is recited in every rakah of salah?", "Surah Al-Fatiha", "Hard"], ["Which companion was given the title Al-Farooq?", "Umar ibn al-Khattab (RA)", "Hard"]], "mysteries": [["Which night in Ramadan is better than a thousand months?", "Laylat al-Qadr", "Medium"], ["Whose story does the Quran call the best of stories?", "Prophet Yusuf (AS), in Surah Yusuf", "Medium"]]}, {"id": "science", "name": "Science and Nature", "title": "Science and Nature Quiz", "desc": "Space, Human Body, Animals and Inventions", "sections": [["Space", [["What is the closest star to Earth?", "The Sun"], ["What is Earth's natural satellite called?", "The Moon"], ["Which planet is famous for its bright rings?", "Saturn"], ["What is the name of our galaxy?", "The Milky Way"], ["What was the first man-made satellite to orbit Earth?", "Sputnik 1 (1957)"]]], ["Human Body", [["Which organ pumps blood around the body?", "The heart"], ["How many teeth does an adult usually have, including wisdom teeth?", "32"], ["What is the largest organ of the human body?", "The skin"], ["How many bones are in the adult human body?", "206"], ["What is the smallest bone in the human body?", "The stapes (stirrup), in the ear"]]], ["Animals", [["What is the largest land animal?", "The African elephant"], ["How many legs does a spider have?", "8"], ["What is the fastest land animal?", "The cheetah"], ["What is a baby kangaroo called?", "A joey"], ["How many hearts does an octopus have?", "Three"]]], ["Inventions", [["Which instrument do scientists use to see tiny things like cells?", "A microscope"], ["Which country invented paper?", "China"], ["Who developed the theory of relativity?", "Albert Einstein"], ["Who discovered penicillin?", "Alexander Fleming (1928)"], ["The word algebra comes from the book of which Muslim mathematician?", "Muhammad ibn Musa al-Khwarizmi"]]]], "doubles": [["At what temperature does water boil at sea level, in Celsius?", "100 °C", "Hard"], ["What is the chemical symbol for gold?", "Au", "Hard"]], "mysteries": [["Which gas do we need to breathe in to stay alive?", "Oxygen", "Easy"], ["Which planet is often called the morning star or evening star?", "Venus", "Medium"]]}, {"id": "sports", "name": "Sports Mania", "title": "Sports Mania", "desc": "Cricket, Football, Olympics and Sports Mix", "sections": [["Cricket", [["How many players are in a cricket team on the field?", "11"], ["How many stumps make up one wicket?", "3"], ["What is it called when a bowler takes wickets with three balls in a row?", "A hat-trick"], ["Who captained Pakistan to victory in the 1992 Cricket World Cup?", "Imran Khan"], ["Which team won the first Cricket World Cup in 1975?", "West Indies"]]], ["Football", [["How long is a standard football (soccer) match?", "90 minutes, in two halves of 45"], ["Which player is known as CR7?", "Cristiano Ronaldo"], ["Which country has won the most FIFA World Cups?", "Brazil (five titles)"], ["Which country won the 2022 FIFA World Cup?", "Argentina"], ["Which three countries co-hosted the 2026 FIFA World Cup?", "Canada, the United States and Mexico"]]], ["Olympics", [["What are the three colours of Olympic medals?", "Gold, silver and bronze"], ["How many rings are on the Olympic flag?", "Five"], ["In which country did the ancient Olympic Games begin?", "Greece"], ["Which Canadian city hosted the 2010 Winter Olympics?", "Vancouver"], ["In which team sport has Pakistan won Olympic gold medals?", "Field hockey"]]], ["Sports Mix", [["In which sport do players hit a shuttlecock?", "Badminton"], ["In which sport is the Stanley Cup awarded?", "Ice hockey"], ["How many points is a touchdown worth in American football?", "6"], ["In tennis, what is a score of zero called?", "Love"], ["Which Canadian invented basketball?", "James Naismith (1891)"]]]], "doubles": [["Which country won the 2024 T20 Cricket World Cup?", "India", "Hard"], ["Which sport is played at Wimbledon?", "Tennis", "Medium"]], "mysteries": [["How many players does a basketball team have on the court?", "5", "Easy"], ["What is Canada's national summer sport?", "Lacrosse", "Hard"]]}, {"id": "pakcan", "name": "Pakistan and Canada", "title": "Pakistan and Canada Quiz", "desc": "Pakistan, Canada, World Capitals and Food", "sections": [["Pakistan", [["What is the capital of Pakistan?", "Islamabad"], ["What is the national language of Pakistan?", "Urdu"], ["Who is known as Quaid-e-Azam, the founder of Pakistan?", "Muhammad Ali Jinnah"], ["What is the highest mountain in Pakistan?", "K2"], ["Who wrote the words of Pakistan's national anthem?", "Hafeez Jalandhari"]]], ["Canada", [["What is the capital of Canada?", "Ottawa"], ["Which leaf appears on Canada's flag?", "The maple leaf"], ["How many provinces does Canada have?", "10 (plus 3 territories)"], ["Which is Canada's largest province by area?", "Quebec"], ["In which year did Canada become a country through Confederation?", "1867"]]], ["World Capitals", [["What is the capital of Saudi Arabia?", "Riyadh"], ["What is the capital of Egypt?", "Cairo"], ["What is the capital of Turkey?", "Ankara"], ["What is the capital of Australia?", "Canberra"], ["What is the capital of Morocco?", "Rabat"]]], ["Food", [["What is the main ingredient of hummus?", "Chickpeas"], ["Which country is world-famous for maple syrup?", "Canada"], ["Which Canadian dish is made of fries, cheese curds and gravy?", "Poutine"], ["Nihari is traditionally eaten at what time of day?", "In the morning, as breakfast"], ["Which expensive spice gives biryani its golden colour and aroma?", "Saffron"]]]], "doubles": [["What is the national animal of Pakistan?", "The markhor", "Hard"], ["What is the national animal of Canada?", "The beaver", "Medium"]], "mysteries": [["Which great river flows through Pakistan into the Arabian Sea?", "The Indus", "Medium"], ["What are Canada's two official languages?", "English and French", "Easy"]]}];
+function buildGame(def){
+  const s = blankState(); s.title = def.title;
+  const pal = THEMES.show.palette;
+  def.sections.forEach(([name, qs], i) => { const id = uid(); s.sections.push({ id, name, color:pal[i % pal.length] });
+    qs.forEach(([t, a], k) => { const d = DIFFS[k]; s.questions.push({ id:uid(), sectionId:id, text:t, answer:a, difficulty:d, points:DIFF_PTS[d], used:false }); }); });
+  def.doubles.forEach(([t, a, d]) => s.questions.push({ id:uid(), double:true, sectionId:null, text:t, answer:a, difficulty:d, points:0, used:false }));
+  def.mysteries.forEach(([t, a, d]) => s.questions.push({ id:uid(), mystery:true, sectionId:null, text:t, answer:a, difficulty:d, points:0, used:false }));
+  s.teams = [{ id:uid(), name:'Team A', score:0 }, { id:uid(), name:'Team B', score:0 }];
   return s;
 }
+function sampleState(){ return buildGame(BUILT_INS[0]); }
 
 function load(){
   try { const raw = localStorage.getItem(LS); if (!raw) return null;
@@ -885,7 +899,7 @@ function renderSetup(){
   const item = (q, pts) => `<div class="qitem ${q.used?'used':''}">
         <div><div class="pts">${pts}</div><div class="diff">${esc(q.difficulty)}${q.used?'<br>answered':''}</div></div>
         <div><div class="qtext" dir="auto">${esc(q.text)}</div>${q.arabic ? `<div class="ar">${esc(q.arabic)}</div>` : ''}<div class="ans" dir="auto">Answer: ${esc(q.answer)}</div>${q.imageId || q.imageUrl ? `<img class="thumb" data-thumb="${q.id}" alt="">${q.reveal === 'tiles' ? '<div class="diff">🧩 Tile reveal</div>' : ''}` : ''}</div>
-        <div class="acts"><button class="btn small" data-editq="${q.id}">Edit</button><button class="btn small ghost" data-delq="${q.id}" aria-label="Delete question">Delete</button></div>
+        <div class="acts"><button class="btn small" data-prevq="${q.id}" title="Open this question as players would see it, without scoring">Preview</button><button class="btn small" data-editq="${q.id}">Edit</button><button class="btn small ghost" data-delq="${q.id}" aria-label="Delete question">Delete</button></div>
       </div>`;
   $('#qList').innerHTML = S.sections.map(s => {
     const qs = S.questions.filter(q => !special(q) && q.sectionId === s.id)
@@ -965,6 +979,7 @@ $('#setupView').addEventListener('click', e => {
     S.sections = S.sections.filter(x => x.id !== s.id); S.questions.filter(q => q.sectionId === s.id).forEach(q => IMG.del(q.imageId)); S.questions = S.questions.filter(q => q.sectionId !== s.id); save(); renderSetup(); }
   if (b.dataset.delteam){ S.teams = S.teams.filter(t => t.id !== b.dataset.delteam); S.turn = 0; save(); renderSetup(); }
   if (b.dataset.delq){ if (!confirm('Delete this question?')) return; const dq = S.questions.find(q => q.id === b.dataset.delq); if (dq) IMG.del(dq.imageId); S.questions = S.questions.filter(q => q.id !== b.dataset.delq); save(); renderSetup(); }
+  if (b.dataset.prevq){ const q = S.questions.find(x => x.id === b.dataset.prevq); if (q) openPreview(q); return; }
   if (b.dataset.editq){ const q = S.questions.find(x => x.id === b.dataset.editq); editingId = q.id;
     $('#qType').value = q.double ? 'double' : q.mystery ? 'mystery' : 'regular'; syncType();
     if (!special(q)) $('#qSec').value = q.sectionId; $('#qDiff').value = DIFFS.includes(q.difficulty) ? q.difficulty : 'Medium'; $('#qPts').value = q.points; $('#qText').value = q.text; $('#qAns').value = q.answer; $('#qAr').value = q.arabic || '';
@@ -1067,6 +1082,16 @@ function cleanGame(){
   g.teams.forEach(t => t.score = 0); g.turn = 0;
   return g;
 }
+function renderBuiltins(){
+  $('#builtinList').innerHTML = BUILT_INS.map(g => `<li><div class="pinfo"><div class="pname">${esc(g.name)}</div>
+      <div class="pmeta">${esc(g.desc)}, ${g.sections.length * 5 + g.doubles.length + g.mysteries.length} questions</div></div>
+      <div class="acts"><button class="btn small primary" data-bload="${g.id}">Load</button></div></li>`).join('');
+}
+$('#builtinList').addEventListener('click', e => { const b = e.target.closest('[data-bload]'); if (!b) return;
+  const def = BUILT_INS.find(g => g.id === b.dataset.bload);
+  if (!confirm(`Load the built-in game "${def.name}"? It replaces the questions you have open now. Your skin and photo stay. Save your current game as a preset first if you want to keep it.`)) return;
+  currentPreset = null; replaceGame(buildGame(def)).then(() => { renderPresets(); toast(`Loaded "${def.name}".`); });
+});
 async function renderPresets(){
   let list = [];
   try { list = (await PDB.all()) || []; } catch(e){ $('#presetList').innerHTML = '<li class="empty">Presets are not available in this browser (private browsing?).</li>'; return; }
@@ -1096,6 +1121,44 @@ $('#presetSave').onclick = async () => {
     toast(same ? `Preset "${name}" updated.` : `Saved as preset "${name}".`); renderPresets();
   } catch(e){ toast('Could not save the preset. The browser storage may be full.'); }
 };
+$('#presetUpBtn').onclick = () => $('#presetUpFile').click();
+$('#presetUpFile').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+  let added = 0, bad = 0;
+  try {
+    const names = ((await PDB.all()) || []).map(p => p.name.toLowerCase());
+    for (const f of files){
+      let d; try { d = JSON.parse(await f.text()); } catch(err){ bad++; continue; }
+      const items = Array.isArray(d.phirkiPresets) ? d.phirkiPresets
+        : [{ name: d.presetName || d.title || f.name.replace(/\.json$/i, ''), game: d, images: d.images || {} }];
+      for (const it of items){
+        const g = it && it.game;
+        if (!g || !Array.isArray(g.questions)){ bad++; continue; }
+        const raw = JSON.parse(JSON.stringify(g)); delete raw.images; delete raw.presetName;
+        const game = normalize(raw);
+        game.questions.forEach(q => { q.used = false; delete q.takenBy; }); game.teams.forEach(t => t.score = 0); game.turn = 0;
+        let name = String(it.name || 'Uploaded game').trim() || 'Uploaded game'; const base = name; let k = 2;
+        while (names.includes(name.toLowerCase())) name = `${base} (${k++})`;
+        names.push(name.toLowerCase());
+        const images = it.images && typeof it.images === 'object' ? it.images : {};
+        await PDB.put({ id:uid(), name, savedAt:Date.now(), game, images, qCount:game.questions.length, picCount:Object.keys(images).length });
+        added++;
+      }
+    }
+  } catch(err){ toast('Could not add the preset. The browser storage may be full.'); renderPresets(); return; }
+  renderPresets();
+  toast(added ? `Added ${added} preset${added === 1 ? '' : 's'}${bad ? `, skipped ${bad} file${bad === 1 ? '' : 's'} that were not Phirki games` : ''}.` : 'No Phirki presets or game files were found in that file.');
+};
+$('#presetDlAll').onclick = async () => {
+  let list = []; try { list = (await PDB.all()) || []; } catch(e){}
+  if (!list.length) return toast('There are no presets to download yet.');
+  const bundle = { phirkiPresets: list.sort((a, b) => b.savedAt - a.savedAt).map(p => ({ name:p.name, savedAt:p.savedAt, game:p.game, images:p.images })) };
+  const blob = new Blob([JSON.stringify(bundle)], { type:'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `phirki-presets-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(`Downloading ${list.length} preset${list.length === 1 ? '' : 's'} in one file.`);
+};
 $('#presetName').onkeydown = e => { if (e.key === 'Enter') $('#presetSave').click(); };
 $('#presetList').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -1108,7 +1171,7 @@ $('#presetList').addEventListener('click', async e => {
       S = normalize(JSON.parse(JSON.stringify(p.game))); currentPreset = p.id; welcomedThisBoard = false;
       save(); resetForm(); renderSetup(); applySkin(); renderPresets(); toast(`Loaded "${p.name}".`);
     }
-    if (b.dataset.pdl){ const p = await PDB.get(b.dataset.pdl); if (p) downloadGame(p.game, p.images, p.name); }
+    if (b.dataset.pdl){ const p = await PDB.get(b.dataset.pdl); if (p) downloadGame({ ...p.game, presetName:p.name }, p.images, 'phirki-preset-' + p.name); }
     if (b.dataset.pdel){ const p = await PDB.get(b.dataset.pdel); if (!p) return;
       if (!confirm(`Delete the preset "${p.name}"? The game you have open now is not affected.`)) return;
       await PDB.del(p.id); if (currentPreset === p.id) currentPreset = null; renderPresets(); toast('Preset deleted.'); }
@@ -1117,7 +1180,9 @@ $('#presetList').addEventListener('click', async e => {
 $('#importBtn').onclick = () => $('#importFile').click();
 $('#importFile').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
-  try { const d = JSON.parse(await f.text()); if (!Array.isArray(d.questions)) throw 0;
+  try { const d = JSON.parse(await f.text());
+    if (Array.isArray(d.phirkiPresets)){ e.target.value = ''; return toast('That file holds several presets. Use Upload preset file in the Presets panel.'); }
+    if (!Array.isArray(d.questions)) throw 0;
     await IMG.clear();
     if (d.images && typeof d.images === 'object') for (const [id, data] of Object.entries(d.images)) await IMG.put(id, data);
     delete d.images; S = normalize(d); save(); resetForm(); renderSetup(); toast('Game imported.'); }
@@ -1480,6 +1545,7 @@ function renderPlay(){
   $('#brandTitle').textContent = S.title || 'Phirki';
   if (S.teams.length) S.turn = S.turn % S.teams.length;
   const cur = S.teams[S.turn];
+  if (testMode){ $('#turnText').innerHTML = '🧪 <strong>Test mode</strong>: tap any slice to preview it'; } else
   $('#turnText').innerHTML = cur ? `<strong>${esc(cur.name)}</strong>, it's your spin` : 'Add players in Setup to keep score';
   renderScores();
   const secsWithQ = S.sections.filter(s => S.questions.some(q => q.sectionId === s.id));
@@ -1565,6 +1631,24 @@ $('#scoreList').addEventListener('click', e => {
 });
 $('#skipTurn').onclick = () => { if (!S.teams.length) return; S.turn = (S.turn + 1) % S.teams.length; save(); renderPlay(); };
 $('#welcomeBtn').onclick = openingSequence;
+function setTestMode(on){
+  testMode = on; $('#testBtn').classList.toggle('on', on); $('#testBtn').textContent = on ? 'Test mode: on' : 'Test mode';
+  canvas.classList.toggle('testing', on); renderPlay();
+}
+$('#testBtn').onclick = () => setTestMode(!testMode);
+canvas.addEventListener('click', e => {
+  if (!testMode || spinning) return;
+  const r = canvas.getBoundingClientRect(), size = r.width, c = size / 2;
+  const x = e.clientX - r.left - c, y = e.clientY - r.top - c, dist = Math.hypot(x, y);
+  if (dist > c - 4 || dist < size * 0.12) return;
+  const segs = segments(); if (!segs.length) return;
+  const arc = Math.PI * 2 / segs.length, TAU = Math.PI * 2;
+  const i = Math.floor((((Math.atan2(y, x) + Math.PI / 2 - rot) % TAU) + TAU) % TAU / arc);
+  const g = segs[i]; let q = g.q;
+  if (g.kind === 'section'){ const qs = S.questions.filter(x => !special(x) && x.sectionId === g.section.id); q = qs.find(x => !x.used) || qs[0]; }
+  if (!q) return;
+  flashSlice(i, 600); setTimeout(() => { hl = -1; dimK = 1; draw(); openPreview(q); }, 650);
+});
 $('#resetBoard').onclick = () => { welcomedThisBoard = false; if (!confirm('Mark every question unanswered and set all scores to 0?')) return;
   S.questions.forEach(q => { q.used = false; delete q.takenBy; }); S.teams.forEach(t => t.score = 0); shown = {}; S.turn = 0; save(); renderPlay(); };
 $('#rulesBtn').onclick = () => { $('#rulesText').textContent = S.rules || 'No rules written yet.'; $('#rulesDialog').showModal(); };
@@ -1572,8 +1656,12 @@ $('#rulesClose').onclick = () => $('#rulesDialog').close();
 
 /* question dialog */
 let activeMys = false, activeDouble = false, activeQ = null, timerId = null, timeLeft = 0, paused = false, resolved = false;
+let previewMode = false, testMode = false;
+function openPreview(q){ previewMode = true; openQuestion(q); }
 function openQuestion(q){
   if (!q) return;
+  $('#qdPreview').hidden = !previewMode; $('#qdPutBack').hidden = previewMode;
+  $('#qdDone').textContent = previewMode ? 'Close preview' : 'Nobody scored, close';
   activeQ = q; activeDouble = !!q.double; activeMys = !!q.mystery; resolved = false;
   $('#qdCard').classList.remove('revealing'); $('#qdMbox').hidden = true; $('#qdFoot').hidden = false; $('#qdAward').hidden = false; $('#qdMysBanner').hidden = !activeMys;
   const s = secById(q.sectionId);
@@ -1592,14 +1680,14 @@ function openQuestion(q){
   $('#qdTimerWrap').hidden = T === 0;
   if (T > 0){ timeLeft = T; updateTimer(true);
     if (S.settings.timerStart === 'auto') startTimer();
-    else { $('#qdPause').textContent = '▶ Start timer'; $('#qdPause').classList.add('primary'); $('#qdTimeText').textContent = `${T} seconds, waiting for the host`; } }
+    else { $('#qdPause').textContent = '▶ Start timer'; $('#qdPause').classList.add('primary'); $('#qdPause').classList.remove('ghost'); $('#qdTimeText').textContent = `${T} seconds, waiting for the host`; } }
   $('#qDialog').showModal();
   if (T === 0){ Suspense.start(); Tiles.start(); }
 }
 let timerStarted = false;
 function startTimer(){
   timerStarted = true; paused = false;
-  $('#qdPause').textContent = 'Pause'; $('#qdPause').classList.remove('primary');
+  $('#qdPause').textContent = 'Pause'; $('#qdPause').classList.remove('primary'); $('#qdPause').classList.add('ghost');
   updateTimer(); Suspense.start(); Tiles.start();
   clearInterval(timerId);
   timerId = setInterval(() => { if (paused) return; timeLeft--; updateTimer();
@@ -1617,8 +1705,8 @@ $('#qdPause').onclick = () => { if (!timerStarted) return startTimer(); if (time
 const doubled = n => n > 0 ? n * 2 : n;
 const halved = n => n > 0 ? Math.round(n / 2) : n;
 function renderAward(){
-  if (!S.teams.length){ $('#qdAward').innerHTML = ''; return; }
-  const t = S.teams[S.turn % S.teams.length];
+  if (!S.teams.length && !previewMode){ $('#qdAward').innerHTML = ''; return; }
+  const t = S.teams.length ? S.teams[S.turn % S.teams.length] : { id:'_test', name:'Test team', score:0 };
   const right = activeMys ? 'Correct: open the box!' : activeDouble ? `Correct: ${t.score} → ${doubled(t.score)}` : `Correct +${Tiles.points()}`;
   const wrong = activeMys ? 'Wrong: box stays shut' : activeDouble ? `Wrong: ${t.score} → ${halved(t.score)}` : `Wrong${S.settings.deductWrong ? ' −' + Tiles.points() : ''}`;
   $('#qdAward').innerHTML = `<div class="arow"><span>${esc(t.name)}</span>
@@ -1628,6 +1716,13 @@ function renderAward(){
 $('#qdReveal').onclick = () => { Suspense.stop(); Tiles.all(); $('#qdAnswer').hidden = false; $('#qdReveal').hidden = true; paused = true; if (timerStarted) $('#qdPause').textContent = 'Resume'; else $('#qdTimerWrap').hidden = true; };
 $('#qdAward').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || !activeQ) return;
+  if (previewMode){
+    if (activeMys){ openMystery(null, !!b.dataset.right); return; }
+    Suspense.stop(); clearInterval(timerId);
+    if (b.dataset.right){ applause(); toast(activeDouble ? 'Preview: a right answer would double the score.' : `Preview: a right answer would give +${Tiles.points()}.`); }
+    else { boo(); toast(activeDouble ? 'Preview: a wrong answer would halve the score.' : S.settings.deductWrong ? `Preview: a wrong answer would lose ${Tiles.points()}.` : 'Preview: a wrong answer scores nothing.'); }
+    $('#qdAward').querySelectorAll('button').forEach(x => x.disabled = true); return;
+  }
   if (activeMys){ openMystery(S.teams.find(x => x.id === (b.dataset.right || b.dataset.wrong)), !!b.dataset.right); return; }
   if (b.dataset.right){ const t = S.teams.find(x => x.id === b.dataset.right);
     if (activeDouble){ t.score = doubled(t.score); toast(`${t.name} doubled to ${t.score}`); }
@@ -1722,7 +1817,7 @@ function openMystery(t, correct){
   drumroll(1.5);
   setTimeout(() => {
     icon.className = 'boxicon open'; icon.textContent = prize.icon;
-    $('#qdPrize').textContent = prize.label; applyPrize(prize, t); $('#qdPrizeSub').textContent = '';
+    $('#qdPrize').textContent = prize.label; if (!previewMode) applyPrize(prize, t); $('#qdPrizeSub').textContent = previewMode ? 'Preview only: no points were given' : '';
     if (prize.id === 'oops') boo(); else applause();
     save(); $('#qdContinue').hidden = false;
   }, 1500);
@@ -1739,6 +1834,7 @@ function drumroll(sec){
 
 function finishQuestion(markUsed, keepTurn = false){
   if (resolved) return; resolved = true;
+  const wasPreview = previewMode; if (wasPreview){ markUsed = false; keepTurn = true; mysExtraSpin = false; previewMode = false; }
   clearInterval(timerId); Suspense.stop(); Tiles.stop();
   if (activeQ && markUsed){ activeQ.used = true; activeQ.takenBy = S.teams.length ? S.teams[S.turn % S.teams.length].id : null;
     if (S.teams.length && !keepTurn) S.turn = (S.turn + 1) % S.teams.length;
@@ -1746,7 +1842,7 @@ function finishQuestion(markUsed, keepTurn = false){
   activeQ = null; activeDouble = false; activeMys = false; save();
   if ($('#qDialog').open) $('#qDialog').close();
   renderPlay();
-  if (markUsed && !S.questions.some(q => !q.used) && S.questions.length) showWinner();
+  if (!wasPreview && markUsed && !S.questions.some(q => !q.used) && S.questions.length) showWinner();
 }
 $('#qdDone').onclick = () => finishQuestion(true);
 $('#qdPutBack').onclick = () => finishQuestion(false);
@@ -1821,6 +1917,7 @@ $('#qdImg').onclick = e => { if (!Tiles.on) e.target.classList.toggle('zoom'); }
 
 /* init */
 applySkin();
+renderBuiltins();
 renderPresets();
 if (S.skin.introOpen) showIntro();
 save(); renderSetup();

@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- PHIRKI · upload this file to the Phirki GitHub repo -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -289,6 +290,14 @@ textarea.ar{font-size:1.35rem}
 .previewbar{background:#3a2a6b;color:#fff;border-radius:10px;padding:.45rem .8rem;margin-bottom:.9rem;font-weight:700;font-size:.92rem}
 #wheel.testing{cursor:pointer}
 .btn.on{background:#7c3aed;color:#fff}
+.mixer{margin-top:1rem;background:var(--navy);border-radius:12px;padding:.7rem .9rem}
+.mixer summary{cursor:pointer;font-weight:800;color:var(--gold)}
+.mixgroup{margin-top:.7rem}
+.mixgroup h4{margin:0 0 .3rem;font-size:.9rem;color:var(--muted);font-weight:700}
+.mixgroup .opts{display:flex;flex-wrap:wrap;gap:.35rem}
+.mixgroup label{display:inline-flex;align-items:center;gap:.35rem;background:var(--navy-2);border:1px solid var(--line);border-radius:999px;padding:.25rem .7rem;font-weight:600;color:var(--ink);cursor:pointer;margin:0;font-size:.9rem}
+.mixgroup label:has(input:checked){background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.mixgroup input{accent-color:var(--navy)}
 .rulestext{white-space:pre-wrap;font-size:1.05rem}
 
 .toast{position:fixed;left:50%;bottom:calc(5.5rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--gold);color:var(--navy);
@@ -364,6 +373,19 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
       <h2>Built-in games</h2>
       <p class="hint">Ready-made games that come with Phirki. Each has 4 sections of 5 questions (100 to 500), 2 Double and 2 Mystery box questions. Loading one keeps your skin and photo.</p>
       <ul class="plist" id="builtinList"></ul>
+      <details class="mixer" id="mixer">
+        <summary>Mix sections from different games</summary>
+        <p class="hint">Tick any sections from any built-in game, then create a new mixed game or add them to the game you have open.</p>
+        <div id="mixList"></div>
+        <label class="toggle" style="margin-top:.6rem"><input type="checkbox" id="mixSpecials" checked> Include 2 Double and 2 Mystery box questions from those games</label>
+        <p class="hint" id="mixInfo" style="margin:.5rem 0"></p>
+        <div class="row">
+          <button class="btn primary shrink" id="mixNew">Create mixed game</button>
+          <button class="btn shrink" id="mixAdd">Add to current game</button>
+          <button class="btn ghost shrink" id="mixRandom">Surprise me</button>
+          <button class="btn ghost shrink" id="mixClear">Clear ticks</button>
+        </div>
+      </details>
     </div>
 
     <div class="panel">
@@ -1082,6 +1104,62 @@ function cleanGame(){
   g.teams.forEach(t => t.score = 0); g.turn = 0;
   return g;
 }
+function renderMixer(){
+  $('#mixList').innerHTML = BUILT_INS.map(g => `<div class="mixgroup"><h4>${esc(g.name)}</h4><div class="opts">${g.sections.map(([name], k) =>
+    `<label><input type="checkbox" value="${g.id}:${k}"> ${esc(name)}</label>`).join('')}</div></div>`).join('');
+  mixInfo();
+}
+function mixPicks(){ return [...document.querySelectorAll('#mixList input:checked')].map(i => { const [g, k] = i.value.split(':'); return { def:BUILT_INS.find(x => x.id === g), k:+k }; }); }
+function mixInfo(){
+  const n = mixPicks().length, teams = Math.max(2, S.teams.length);
+  $('#mixInfo').textContent = !n ? 'No sections ticked yet.'
+    : `${n} section${n === 1 ? '' : 's'} ticked (${n * 5} questions). ` + (n % teams === 0 ? `Splits evenly for Fair turns with ${teams} teams.` : `Tip: a multiple of ${teams} sections keeps Fair turns perfectly even with ${teams} teams.`);
+}
+function addSectionsTo(game, picks){
+  const pal = TH().palette, taken = new Set(game.sections.map(s => s.name.toLowerCase()));
+  const have = new Set(game.questions.map(q => q.text)); let added = 0;
+  picks.forEach(({ def, k }) => {
+    const [name, qs] = def.sections[k]; let nm = name, n = 2;
+    if (qs.every(([t]) => have.has(t))) return;   // this section is already in the game
+    while (taken.has(nm.toLowerCase())) nm = `${name} ${n++}`; taken.add(nm.toLowerCase());
+    const id = uid(); game.sections.push({ id, name:nm, color:pal[game.sections.length % pal.length] });
+    qs.forEach(([t, a], j) => { const d = DIFFS[j]; game.questions.push({ id:uid(), sectionId:id, text:t, answer:a, difficulty:d, points:DIFF_PTS[d], used:false }); });
+    added++;
+  });
+  return added;
+}
+function addSpecialsTo(game, defs){
+  const have = new Set(game.questions.map(q => q.text));
+  const pick = (arr, n) => arr.filter(([t]) => !have.has(t)).sort(() => Math.random() - 0.5).slice(0, n);
+  pick(defs.flatMap(d => d.doubles), 2).forEach(([t, a, d]) => game.questions.push({ id:uid(), double:true, sectionId:null, text:t, answer:a, difficulty:d, points:0, used:false }));
+  pick(defs.flatMap(d => d.mysteries), 2).forEach(([t, a, d]) => game.questions.push({ id:uid(), mystery:true, sectionId:null, text:t, answer:a, difficulty:d, points:0, used:false }));
+}
+$('#mixList').addEventListener('change', mixInfo);
+$('#mixClear').onclick = () => { document.querySelectorAll('#mixList input').forEach(i => i.checked = false); mixInfo(); };
+$('#mixRandom').onclick = () => {
+  document.querySelectorAll('#mixList input').forEach(i => i.checked = false);
+  const games = BUILT_INS.slice().sort(() => Math.random() - 0.5).slice(0, 4);
+  games.forEach(g => { const k = Math.floor(Math.random() * g.sections.length); const box = document.querySelector(`#mixList input[value="${g.id}:${k}"]`); if (box) box.checked = true; });
+  mixInfo(); toast('Picked 4 random sections. Click Create mixed game to play them.');
+};
+$('#mixNew').onclick = () => {
+  const picks = mixPicks(); if (!picks.length) return toast('Tick at least one section first.');
+  if (!confirm(`Create a new game from ${picks.length} section${picks.length === 1 ? '' : 's'}? It replaces the questions you have open now. Your skin and photo stay.`)) return;
+  const g = blankState(); g.title = 'Mix and Match';
+  addSectionsTo(g, picks);
+  if ($('#mixSpecials').checked) addSpecialsTo(g, [...new Set(picks.map(p => p.def))]);
+  g.teams = S.teams.length ? S.teams.map(t => ({ id:uid(), name:t.name, score:0 })) : [{ id:uid(), name:'Team A', score:0 }, { id:uid(), name:'Team B', score:0 }];
+  currentPreset = null;
+  replaceGame(g).then(() => { renderPresets(); toast(`Created a mixed game with ${picks.length * 5 + ($('#mixSpecials').checked ? 4 : 0)} questions.`); });
+};
+$('#mixAdd').onclick = () => {
+  const picks = mixPicks(); if (!picks.length) return toast('Tick at least one section first.');
+  const added = addSectionsTo(S, picks), skipped = picks.length - added;
+  if (added && $('#mixSpecials').checked) addSpecialsTo(S, [...new Set(picks.map(p => p.def))]);
+  save(); renderSetup();
+  toast(added ? `Added ${added} section${added === 1 ? '' : 's'} to your game${skipped ? `, skipped ${skipped} already in it` : ''}.` : 'Those sections are already in your game.');
+};
+
 function renderBuiltins(){
   $('#builtinList').innerHTML = BUILT_INS.map(g => `<li><div class="pinfo"><div class="pname">${esc(g.name)}</div>
       <div class="pmeta">${esc(g.desc)}, ${g.sections.length * 5 + g.doubles.length + g.mysteries.length} questions</div></div>
@@ -1918,6 +1996,7 @@ $('#qdImg').onclick = e => { if (!Tiles.on) e.target.classList.toggle('zoom'); }
 /* init */
 applySkin();
 renderBuiltins();
+renderMixer();
 renderPresets();
 if (S.skin.introOpen) showIntro();
 save(); renderSetup();

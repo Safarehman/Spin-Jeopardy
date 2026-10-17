@@ -337,6 +337,10 @@ textarea.ar{font-size:1.35rem}
 .rmscores .r b{font-family:var(--display);font-weight:400;font-size:1.3rem;min-width:3.5ch;text-align:right}
 .rmscores .r.cur{outline:2px solid var(--gold)}
 .rmcenter{text-align:center}
+.rmsize{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-top:1rem;background:var(--navy-2);border-radius:10px;padding:.5rem .7rem}
+.rmsize span{flex:1;font-weight:700;color:var(--muted);min-width:7rem}
+.rmsize b{color:var(--ink)}
+.rmnote{background:#3a2a6b;border-radius:10px;padding:.5rem .8rem;margin-bottom:.8rem;font-weight:600}
 .rmprize{font-family:var(--display);color:var(--gold);font-size:2rem;text-align:center;margin:.5rem 0}
 .rulestext{white-space:pre-wrap;font-size:1.05rem}
 
@@ -356,7 +360,13 @@ body.tv .boardfoot{justify-content:flex-start}
 body.tv .bar{padding:.5rem 1.25rem}
 body.tv main{max-width:none;padding:.75rem 1.5rem}
 body.tv .play{grid-template-columns:auto minmax(0,1fr);align-items:center;gap:2.5rem}
-body.tv .wheelwrap{width:min(calc(100vh - 13.5rem), 56vw)}
+html.tv{zoom:var(--tvz,1)}
+body.tv .wheelwrap{width:min(calc(100vh / var(--tvz,1) - 13.5rem), calc(56vw / var(--tvz,1)))}
+body.tv dialog{max-width:min(760px, calc(94vw / var(--tvz,1)))}
+body.tv .card{max-height:calc(90vh / var(--tvz,1))}
+body.tv .qimg{max-height:calc(34vh / var(--tvz,1))}
+body.tv .qimgwrap.tiled .qimg{max-height:calc(38vh / var(--tvz,1))}
+body.tv .wcard{max-height:calc(92vh / var(--tvz,1))}
 body.tv .turn{font-size:1.7rem}
 body.tv .board h2{font-size:1.6rem}
 body.tv .team{padding:1rem 1.3rem 1.2rem}
@@ -386,7 +396,7 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
   body.tv .bar{padding:.3rem 1rem}
   body.tv .turn{font-size:1.15rem}
   body.tv .play{align-items:center}
-  body.tv .wheelwrap{width:min(calc(100vh - 95px), 55vw)}
+  body.tv .wheelwrap{width:min(calc(100vh / var(--tvz,1) - 95px), calc(55vw / var(--tvz,1)))}
   body.tv .team{padding:.55rem .9rem .7rem}
   body.tv .fairwrap{display:none}
   body.tv .team .name{font-size:1.2rem} body.tv .team .score{font-size:1.9rem} body.tv .meter{height:16px}
@@ -724,8 +734,10 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
   <div class="inner">
     <div class="rmtop"><span id="rmConn">📡 Connected</span>
       <button class="btn small ghost" id="rmReconnect" hidden>Reconnect</button>
+      <button class="btn small" id="rmSetup">⚙ Setup</button>
       <button class="btn small ghost" id="rmResend">Resend game</button>
       <button class="btn small ghost" id="rmQuit">Disconnect</button></div>
+    <div class="rmnote" id="rmChanged" hidden>Your questions changed on this phone. Tap <b>Resend game</b> to put the new version on the TV.</div>
     <div id="rmBody"></div>
   </div>
 </div>
@@ -858,8 +870,22 @@ function showTab(which){
 }
 $('#tabSetup').onclick = () => { if (document.body.classList.contains('tv')) setTV(false); showTab('setup'); };
 $('#tabPlay').onclick = () => showTab('play');
+const TVZ_KEY = LS + '.tvsize';
+let tvZoom = (() => { try { const v = parseFloat(localStorage.getItem(TVZ_KEY)); return v > 0 ? v : 0; } catch(e){ return 0; } })();
+function autoTvZoom(){ return Math.min(1, Math.max(0.6, Math.round(innerHeight / 900 * 20) / 20)); }
+function applyTvZoom(){ document.documentElement.style.setProperty('--tvz', String(tvZoom || 1)); requestAnimationFrame(() => { try { sizeCanvas(); } catch(e){} }); }
+function setTvZoom(z){
+  tvZoom = Math.min(1.6, Math.max(0.4, Math.round(z * 20) / 20));
+  try { localStorage.setItem(TVZ_KEY, String(tvZoom)); } catch(e){}
+  applyTvZoom(); toast(`TV size ${Math.round(tvZoom * 100)}%`);
+}
+document.addEventListener('keydown', e => {
+  if (!document.body.classList.contains('tv') || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  if (e.key === '-' || e.key === '_') setTvZoom((tvZoom || 1) - 0.05);
+  else if (e.key === '=' || e.key === '+') setTvZoom((tvZoom || 1) + 0.05);
+});
 function setTV(on){
-  document.body.classList.toggle('tv', on); document.documentElement.classList.toggle('tv', on);
+  document.body.classList.toggle('tv', on); document.documentElement.classList.toggle('tv', on); applyTvZoom();
   $('#tvBtn').textContent = on ? 'Exit TV mode' : 'TV mode';
   if (on){ showTab('play');
     const el = document.documentElement, fs = el.requestFullscreen || el.webkitRequestFullscreen;
@@ -2086,7 +2112,7 @@ function rmCleanup(){
   try { RM.conn && RM.conn.close(); } catch(e){}
   try { RM.peer && RM.peer.destroy(); } catch(e){}
   Object.assign(RM, { role:null, peer:null, conn:null, ready:false, rx:null, tx:null, lastState:'', state:null, key:'' });
-  $('#rmBadge').hidden = true; $('#rmPanel').hidden = true; $('#rmTv').hidden = true;
+  $('#rmBadge').hidden = true; $('#rmPanel').hidden = true; $('#rmTv').hidden = true; $('#rmBtn').textContent = '📡 Remote';
   try { RM.wake && RM.wake.release(); } catch(e){}
 }
 function rmOpenDialog(){
@@ -2109,6 +2135,7 @@ function rmStartTv(){
   if ($('#rmDialog').open) $('#rmDialog').close();
   if (!hasPeer()) return toast('The remote needs an internet connection. Reload the page and try again.');
   rmCleanup(); RM.role = 'tv';
+  if (!tvZoom){ tvZoom = autoTvZoom(); applyTvZoom(); }
   try { ac(); } catch(e){}                       // unlock sound while we still have a click
   const el = document.documentElement, fs = el.requestFullscreen || el.webkitRequestFullscreen;
   if (fs && !document.fullscreenElement){ try { const r = fs.call(el); if (r && r.catch) r.catch(() => {}); } catch(e){} }
@@ -2204,6 +2231,7 @@ function rmDo(m){
     case 'welStart': if (!$('#welcome').hidden) hideWelcome(); break;
     case 'again': click('#wAgain'); break;
     case 'winClose': click('#wClose'); break;
+    case 'zoom': setTvZoom(m.fit ? autoTvZoom() : (tvZoom || 1) + (+m.by || 0)); break;
   }
   setTimeout(rmPush, 80);
 }
@@ -2212,7 +2240,8 @@ function rmSnap(){
   const phase = !$('#intro').hidden ? 'intro' : !$('#welcome').hidden ? 'welcome' : !$('#winner').hidden ? 'winner'
     : dlg ? (!$('#qdMbox').hidden ? 'mystery' : 'question') : spinning ? 'spinning' : 'idle';
   const s = { phase, introTwo:$('#intro').classList.contains('two'), turnText:$('#turnText').textContent, progress:$('#progress').textContent,
-    turn:S.turn, teams:S.teams.map(t => ({ name:t.name, score:t.score })), canSpin:S.questions.some(q => !q.used) };
+    turn:S.turn, teams:S.teams.map(t => ({ name:t.name, score:t.score })), canSpin:S.questions.some(q => !q.used),
+    tvz:Math.round((tvZoom || 1) * 100) };
   if (phase === 'question' && activeQ){
     const btn = sel => { const b = $(sel); return b && b.getClientRects().length ? { label:b.textContent, dis:b.disabled } : null; };
     const pts = $('#qdPts').firstChild;
@@ -2300,8 +2329,13 @@ function rmAck(s){
   $('#rmBar').style.width = pct + '%'; $('#rmStatus').textContent = pct < 100 ? `Sending the game to the TV… ${pct}%` : 'Setting up the game on the TV…';
   rmPump();
 }
+function rmBtnLabel(){ $('#rmBtn').textContent = RM.role === 'phone' && RM.ready ? '📡 Back to remote' : '📡 Remote'; }
+$('#rmSetup').onclick = () => { $('#rmPanel').hidden = true; showTab('setup'); rmBtnLabel();
+  toast('Still connected to the TV. Tap 📡 Back to remote at the top to return.'); };
 function rmShowPanel(){
-  $('#rmPanel').hidden = false; $('#rmReconnect').hidden = true;
+  $('#rmPanel').hidden = false; rmBtnLabel();
+  $('#rmChanged').hidden = true;
+  rmPayload().then(p => { if (RM.ready && p.gid !== RM.gameId) $('#rmChanged').hidden = false; }); $('#rmReconnect').hidden = true;
   $('#rmConn').classList.remove('off'); $('#rmConn').textContent = `📡 Connected to TV ${RM.code}`;
   rmWake(); if (RM.state) renderRemote(RM.state); else $('#rmBody').innerHTML = '<p class="rmcenter hint">Waiting for the TV…</p>';
 }
@@ -2348,17 +2382,21 @@ function renderRemote(s){
       <div class="rmgrid">${rmB('again', 'Play again', 'primary')}${rmB('winClose', 'Close', 'ghost')}</div></div>`;
   h += `<div class="rmscores">${s.teams.map((t, i) => `<div class="r ${i === s.turn ? 'cur' : ''}"><span>${esc(t.name)}</span><b data-dyn="score${i}"></b>
       <button class="btn small" data-rc="adj" data-i="${i}" data-by="100" aria-label="Add 100 to ${esc(t.name)}">+</button>
-      <button class="btn small" data-rc="adj" data-i="${i}" data-by="-100" aria-label="Take 100 from ${esc(t.name)}">−</button></div>`).join('')}</div>`;
+      <button class="btn small" data-rc="adj" data-i="${i}" data-by="-100" aria-label="Take 100 from ${esc(t.name)}">−</button></div>`).join('')}</div>
+    <div class="rmsize"><span>TV size <b data-dyn="tvz"></b></span>
+      <button class="btn small" data-rc="zoom" data-by="-0.05" aria-label="Make everything on the TV smaller">− Smaller</button>
+      <button class="btn small" data-rc="zoom" data-by="0.05" aria-label="Make everything on the TV bigger">+ Bigger</button>
+      <button class="btn small ghost" data-rc="zoom" data-fit="1">Auto fit</button></div>`;
   // rebuild only when the layout changes, so a tap is never lost while the timer ticks
   if (h !== RM.key){ RM.key = h; $('#rmBody').innerHTML = h; }
   const dyn = { pts:s.q && s.q.pts, tiles:s.q && s.q.tiles, timer:s.q && s.q.timer, timerBtn:s.q && s.q.timerBtn,
     right:s.q && s.q.right && s.q.right.label, wrong:s.q && s.q.wrong && s.q.wrong.label };
-  s.teams.forEach((t, i) => dyn['score' + i] = String(t.score));
+  s.teams.forEach((t, i) => dyn['score' + i] = String(t.score)); dyn.tvz = (s.tvz || 100) + '%';
   document.querySelectorAll('#rmBody [data-dyn]').forEach(el => { const v = dyn[el.dataset.dyn]; if (v != null && el.textContent !== v) el.textContent = v; });
 }
 $('#rmBody').addEventListener('click', e => {
   const b = e.target.closest('[data-rc]'); if (!b || b.disabled || !RM.conn || !RM.conn.open) return;
-  const m = { t:'cmd', c:b.dataset.rc }; if (b.dataset.i != null){ m.i = +b.dataset.i; m.by = +b.dataset.by; }
+  const m = { t:'cmd', c:b.dataset.rc }; if (b.dataset.i != null) m.i = +b.dataset.i; if (b.dataset.by != null) m.by = +b.dataset.by; if (b.dataset.fit) m.fit = 1;
   try { RM.conn.send(m); } catch(e){}
   if (navigator.vibrate) try { navigator.vibrate(15); } catch(err){}
 });

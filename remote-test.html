@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<!-- Phone remote connection test. Upload next to index.html in the Phirki GitHub repo, then open /remote-test.html -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phone remote test</title>
+<style>
+:root{--bg:#101a5c;--panel:#17237a;--line:#2d3ca8;--gold:#ffc940;--ink:#fff;--muted:#aeb6ea;--good:#2ec4b6;--bad:#ff5c5c;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;text-align:center;transition:background .25s}
+h1{color:var(--gold);margin:0 0 .4rem;font-size:clamp(1.6rem,4vw,2.6rem)}
+p{color:var(--muted);margin:.3rem 0 1rem;font-size:1.05rem;max-width:40rem}
+.btn{border:0;border-radius:14px;padding:1rem 1.6rem;font-size:1.2rem;font-weight:800;cursor:pointer;background:var(--panel);color:var(--ink);border:2px solid var(--line);margin:.4rem}
+.btn.primary{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.btn:focus-visible{outline:4px solid #fff;outline-offset:3px}
+.btn:disabled{opacity:.4}
+.code{font-size:clamp(4rem,16vw,9rem);font-weight:900;letter-spacing:.25em;color:var(--gold);margin:.5rem 0;font-variant-numeric:tabular-nums}
+input{font-size:2.4rem;width:10rem;text-align:center;letter-spacing:.3em;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--ink);padding:.5rem}
+.checks{list-style:none;padding:0;margin:1rem 0;text-align:left;font-size:1.15rem;min-width:min(30rem,90vw)}
+.checks li{padding:.45rem .8rem;border-radius:10px;background:var(--panel);margin-bottom:.4rem}
+.ok::before{content:'✓ ';color:var(--good);font-weight:900}
+.no::before{content:'✗ ';color:var(--bad);font-weight:900}
+.wait::before{content:'… ';color:var(--muted)}
+.big{font-size:clamp(2rem,7vw,4.5rem);font-weight:900;margin:.6rem 0;min-height:1.2em}
+.grid{display:flex;flex-wrap:wrap;justify-content:center;max-width:34rem}
+.hidden{display:none!important}
+small{color:var(--muted)}
+</style>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+
+<!-- choose role -->
+<section id="pick">
+  <h1>Phone remote test</h1>
+  <p>Open this page on the TV box and on your phone. Pick the right option on each device.</p>
+  <button class="btn primary" id="asTv" autofocus>📺 This is the TV</button>
+  <button class="btn" id="asPhone">📱 This is my phone</button>
+</section>
+
+<!-- TV side -->
+<section id="tv" class="hidden">
+  <h1>TV display</h1>
+  <p>On your phone, open this same page, tap <b>This is my phone</b> and type this code:</p>
+  <div class="code" id="tvCode">····</div>
+  <div class="big" id="tvBig"></div>
+  <ul class="checks" id="tvChecks"></ul>
+  <button class="btn" id="tvFull">Full screen</button>
+</section>
+
+<!-- Phone side -->
+<section id="phone" class="hidden">
+  <h1>Phone remote</h1>
+  <div id="pair">
+    <p>Type the code shown on the TV:</p>
+    <input id="codeIn" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="0000">
+    <div><button class="btn primary" id="connect">Connect</button></div>
+  </div>
+  <div id="remote" class="hidden">
+    <p id="phoneStatus"></p>
+    <div class="grid">
+      <button class="btn" data-color="#c0263d">🔴 Red</button>
+      <button class="btn" data-color="#1f8a4c">🟢 Green</button>
+      <button class="btn" data-color="#2459c4">🔵 Blue</button>
+      <button class="btn primary" id="ping">⏱ Speed test</button>
+      <button class="btn primary" id="bulk">📦 Send 2 MB (like photos)</button>
+    </div>
+    <p id="phoneResult"></p>
+  </div>
+  <ul class="checks" id="phoneChecks"></ul>
+</section>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const PREFIX = 'phirki-remote-test-';
+const show = id => ['pick','tv','phone'].forEach(x => $('#' + x).classList.toggle('hidden', x !== id));
+function checklist(el, items){ el.innerHTML = items.map(([state, text]) => `<li class="${state}">${text}</li>`).join(''); }
+const hasRTC = !!(window.RTCPeerConnection || window.webkitRTCPeerConnection);
+const hasPeer = typeof window.Peer === 'function';
+let actx;
+function beep(f = 880){ try { actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+  const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = f; g.gain.setValueAtTime(0.2, actx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.25); o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.3); } catch(e){} }
+
+/* ---------------- TV ---------------- */
+const tv = { server:'wait', phone:'wait', ping:'wait', bulk:'wait', pingText:'', bulkText:'' };
+function renderTv(){
+  const px = `${Math.round(screen.width * (devicePixelRatio || 1))} × ${Math.round(screen.height * (devicePixelRatio || 1))}`;
+  checklist($('#tvChecks'), [
+    [hasRTC ? 'ok' : 'no', 'Browser supports direct connections (WebRTC)'],
+    [hasPeer ? 'ok' : 'no', 'Connection helper loaded'],
+    [tv.server, 'Reached the pairing service'],
+    [tv.phone, 'Phone connected'],
+    [tv.ping, 'Speed test ' + tv.pingText],
+    [tv.bulk, 'Photo-size transfer ' + tv.bulkText],
+    ['ok', `Screen: ${px} pixels`]
+  ]);
+}
+function startTv(){
+  show('tv'); renderTv();
+  if (!hasRTC || !hasPeer){ $('#tvBig').textContent = 'This browser cannot do the phone remote.'; return; }
+  const tryCode = () => {
+    const code = String(Math.floor(1000 + Math.random() * 9000));
+    const peer = new Peer(PREFIX + code);
+    peer.on('open', () => { $('#tvCode').textContent = code; tv.server = 'ok'; renderTv(); });
+    peer.on('error', err => {
+      if (err.type === 'unavailable-id'){ peer.destroy(); tryCode(); return; }
+      tv.server = tv.server === 'ok' ? 'ok' : 'no'; $('#tvBig').textContent = 'Connection problem: ' + err.type; renderTv();
+    });
+    peer.on('connection', conn => {
+      let bulkBytes = 0, bulkStart = 0;
+      conn.on('open', () => { tv.phone = 'ok'; $('#tvBig').textContent = '📱 Phone connected!'; beep(660); renderTv(); });
+      conn.on('data', msg => {
+        if (msg.t === 'color'){ document.body.style.background = msg.c; $('#tvBig').textContent = 'Button pressed on phone'; beep(); setTimeout(() => document.body.style.background = '', 900); }
+        if (msg.t === 'ping') conn.send({ t:'pong', id:msg.id });
+        if (msg.t === 'pingDone'){ tv.ping = msg.ms < 400 ? 'ok' : 'no'; tv.pingText = `(${msg.ms} ms round trip)`; renderTv(); }
+        if (msg.t === 'bulkStart'){ bulkBytes = 0; bulkStart = performance.now(); $('#tvBig').textContent = 'Receiving…'; }
+        if (msg.t === 'chunk'){ bulkBytes += msg.d.length; }
+        if (msg.t === 'bulkEnd'){
+          const ok = bulkBytes === msg.total, secs = ((performance.now() - bulkStart) / 1000).toFixed(1);
+          tv.bulk = ok ? 'ok' : 'no'; tv.bulkText = ok ? `(2 MB in ${secs} s)` : '(data was incomplete)';
+          $('#tvBig').textContent = ok ? '📦 2 MB received!' : 'Transfer incomplete'; beep(ok ? 990 : 300); renderTv();
+          conn.send({ t:'bulkAck', ok, secs });
+        }
+      });
+      conn.on('close', () => { tv.phone = 'no'; $('#tvBig').textContent = 'Phone disconnected'; renderTv(); });
+    });
+  };
+  tryCode();
+}
+$('#tvFull').onclick = () => { const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen; if (f) f.call(el); };
+
+/* ---------------- Phone ---------------- */
+let conn = null, pingT0 = 0;
+function renderPhone(items){ checklist($('#phoneChecks'), items); }
+function startPhone(){
+  show('phone');
+  renderPhone([[hasRTC ? 'ok' : 'no', 'Phone supports direct connections'], [hasPeer ? 'ok' : 'no', 'Connection helper loaded']]);
+  setTimeout(() => $('#codeIn').focus(), 100);
+}
+$('#connect').onclick = () => {
+  const code = $('#codeIn').value.trim(); if (!/^\d{4}$/.test(code)) return alert('Type the 4-digit code from the TV.');
+  $('#connect').disabled = true; $('#connect').textContent = 'Connecting…';
+  const peer = new Peer();
+  peer.on('open', () => {
+    conn = peer.connect(PREFIX + code, { reliable:true });
+    const timer = setTimeout(() => { if (!conn.open){ $('#connect').disabled = false; $('#connect').textContent = 'Connect'; alert('Could not reach the TV. Check the code and that both devices are online.'); } }, 12000);
+    conn.on('open', () => { clearTimeout(timer); $('#pair').classList.add('hidden'); $('#remote').classList.remove('hidden');
+      $('#phoneStatus').textContent = `Connected to TV ${code}. Tap a button and watch the TV.`; });
+    conn.on('data', msg => {
+      if (msg.t === 'pong' && msg.id === pingT0){ const ms = Math.round(performance.now() - pingT0); conn.send({ t:'pingDone', ms });
+        $('#phoneResult').textContent = `Speed test: ${ms} ms round trip ${ms < 150 ? '(excellent)' : ms < 400 ? '(fine)' : '(slow)'}`; }
+      if (msg.t === 'bulkAck') $('#phoneResult').textContent = msg.ok ? `2 MB reached the TV in ${msg.secs} seconds.` : 'The transfer did not arrive complete.';
+    });
+    conn.on('close', () => { $('#phoneStatus').textContent = 'Disconnected from the TV.'; });
+  });
+  peer.on('error', err => { $('#connect').disabled = false; $('#connect').textContent = 'Connect';
+    alert(err.type === 'peer-unavailable' ? 'No TV found with that code. Check the number on the TV.' : 'Connection problem: ' + err.type); });
+};
+$('#codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('#connect').click(); });
+document.querySelectorAll('[data-color]').forEach(b => b.onclick = () => conn && conn.open && conn.send({ t:'color', c:b.dataset.color }));
+$('#ping').onclick = () => { if (!conn || !conn.open) return; pingT0 = performance.now(); conn.send({ t:'ping', id:pingT0 }); };
+$('#bulk').onclick = async () => {
+  if (!conn || !conn.open) return;
+  const total = 2 * 1024 * 1024, size = 64 * 1024, chunk = 'x'.repeat(size);
+  $('#phoneResult').textContent = 'Sending 2 MB…'; conn.send({ t:'bulkStart' });
+  for (let sent = 0; sent < total; sent += size){
+    conn.send({ t:'chunk', d:chunk });
+    const dc = conn.dataChannel; while (dc && dc.bufferedAmount > 1024 * 1024) await new Promise(r => setTimeout(r, 30));
+  }
+  conn.send({ t:'bulkEnd', total });
+};
+
+$('#asTv').onclick = startTv;
+$('#asPhone').onclick = startPhone;
+})();
+</script>
+</body>
+</html>

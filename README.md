@@ -1,4 +1,4 @@
-# Spin Jeopardy
+# Phirki
 
 A Jeopardy-style quiz game where a spinning wheel picks the section, question and points.
 Single static page (no build step), ready for GitHub + Netlify.

@@ -4,6 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -298,6 +299,45 @@ textarea.ar{font-size:1.35rem}
 .mixgroup label{display:inline-flex;align-items:center;gap:.35rem;background:var(--navy-2);border:1px solid var(--line);border-radius:999px;padding:.25rem .7rem;font-weight:600;color:var(--ink);cursor:pointer;margin:0;font-size:.9rem}
 .mixgroup label:has(input:checked){background:var(--gold);color:var(--navy);border-color:var(--gold)}
 .mixgroup input{accent-color:var(--navy)}
+/* ---------- Phone remote ---------- */
+.rmh{font-family:var(--display);font-weight:400;color:var(--gold);margin:0 0 .6rem}
+.rmchoices{display:flex;gap:.6rem;flex-wrap:wrap;margin:.6rem 0 1rem}
+.rmchoices .btn{flex:1;min-width:10rem;padding:1rem;font-size:1.1rem}
+.rmcode{font-size:2.6rem;text-align:center;letter-spacing:.35em;max-width:12rem;display:block;margin:.4rem auto 1rem}
+.rmbar{height:14px;background:var(--navy);border-radius:99px;overflow:hidden;margin:.6rem 0}
+.rmbar i{display:block;height:100%;width:0;background:var(--gold);transition:width .2s}
+.rmtv{position:fixed;inset:0;z-index:97;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem}
+.rmtv h1{font-family:var(--display);font-weight:400;color:var(--gold);font-size:clamp(1.6rem,3vw,2.6rem);margin:0 0 .5rem}
+.rmtv p{font-size:clamp(1.1rem,2vw,1.6rem);color:var(--muted);max-width:50rem;margin:.4rem 0}
+.rmtv .rmbig{font-family:var(--display);font-size:clamp(5rem,16vw,11rem);color:var(--gold);letter-spacing:.2em;line-height:1.1;margin:.5rem 0}
+.rmtv .rmbar{width:min(40rem,80vw);height:22px}
+.rmbadge{position:fixed;right:.8rem;bottom:calc(.8rem + env(safe-area-inset-bottom,0px));z-index:60;background:var(--navy-2);border:1px solid var(--line);border-radius:999px;padding:.3rem .8rem;font-size:.85rem;color:var(--muted)}
+.rmbadge.off{color:#ffb86b;border-color:#ffb86b}
+.rmpanel{position:fixed;inset:0;z-index:99;background:var(--navy);overflow:auto;padding:calc(.8rem + env(safe-area-inset-top,0px)) 1rem calc(1.2rem + env(safe-area-inset-bottom,0px))}
+.rmpanel .inner{max-width:34rem;margin:0 auto}
+.rmtop{display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem;flex-wrap:wrap}
+.rmtop span{flex:1;font-weight:700;color:var(--good);min-width:8rem}
+.rmtop span.off{color:#ffb86b}
+.rmturn{text-align:center;font-size:1.15rem;margin:.2rem 0 .8rem}
+.rmspin{display:block;width:min(14rem,62vw);aspect-ratio:1;border-radius:50%;margin:1rem auto;border:6px solid var(--gold);background:var(--navy-2);color:var(--gold);font-family:var(--display);font-size:2.2rem;cursor:pointer}
+.rmspin:disabled{opacity:.5;cursor:wait}
+.rmcard{background:var(--navy-2);border:2px solid var(--gold);border-radius:16px;padding:1rem}
+.rmmeta{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.5rem;color:var(--muted);font-weight:700}
+.rmmeta b{margin-left:auto;font-family:var(--display);font-weight:400;color:var(--gold);font-size:1.4rem}
+.rmq{font-size:1.25rem;font-weight:800;margin:.2rem 0 .7rem;overflow-wrap:anywhere;unicode-bidi:plaintext}
+.rmans{background:#0b3d2e;border:2px dashed var(--good);border-radius:12px;padding:.6rem .8rem;margin:.6rem 0}
+.rmans small{display:block;color:#9fd9cb;font-weight:700}
+.rmans div{font-size:1.25rem;font-weight:800;color:#bff5ea;unicode-bidi:plaintext;overflow-wrap:anywhere}
+.rmgrid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.7rem}
+.rmgrid .btn{padding:.9rem .6rem;font-size:1.05rem}
+.rmgrid .wide{grid-column:1/-1}
+.rmscores{margin-top:1.1rem;display:flex;flex-direction:column;gap:.4rem}
+.rmscores .r{display:flex;align-items:center;gap:.5rem;background:var(--navy-2);border-radius:10px;padding:.5rem .7rem}
+.rmscores .r span{flex:1;font-weight:800;overflow-wrap:anywhere}
+.rmscores .r b{font-family:var(--display);font-weight:400;font-size:1.3rem;min-width:3.5ch;text-align:right}
+.rmscores .r.cur{outline:2px solid var(--gold)}
+.rmcenter{text-align:center}
+.rmprize{font-family:var(--display);color:var(--gold);font-size:2rem;text-align:center;margin:.5rem 0}
 .rulestext{white-space:pre-wrap;font-size:1.05rem}
 
 .toast{position:fixed;left:50%;bottom:calc(5.5rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--gold);color:var(--navy);
@@ -362,6 +402,7 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
     <button role="tab" id="tabSetup" aria-selected="true" aria-controls="setupView">Setup</button>
     <button role="tab" id="tabPlay" aria-selected="false" aria-controls="playView">Play</button>
   </div>
+  <button class="btn small ghost" id="rmBtn" title="Show the game on a TV box and control it from your phone">📡 Remote</button>
   <button class="btn small ghost" id="tvBtn" title="Big layout for showing on a TV">TV mode</button>
 </header>
 
@@ -650,6 +691,44 @@ body.tv .qbody{font-size:clamp(1.8rem,3.6vw,3rem)}
   </div>
 </div>
 <canvas id="fx" aria-hidden="true"></canvas>
+<dialog id="rmDialog" aria-labelledby="rmHead">
+  <div class="card">
+    <h2 id="rmHead" class="rmh">📡 Phone remote</h2>
+    <div id="rmChoose">
+      <p class="hint">Show the game full screen on a TV box and run it from your phone. Open Phirki on both devices, both connected to the internet.</p>
+      <div class="rmchoices">
+        <button class="btn primary" id="rmAsTv">📺 This is the TV</button>
+        <button class="btn" id="rmAsPhone">📱 This is my phone</button>
+      </div>
+      <div class="qfoot"><button class="btn ghost" id="rmClose">Close</button></div>
+    </div>
+    <div id="rmPhoneStep" hidden>
+      <p class="hint">Type the code shown on the TV. The game you have open, with its photos, is sent to the TV.</p>
+      <input type="text" id="rmCode" class="rmcode" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="0000" aria-label="TV code">
+      <div class="rmbar" id="rmBarWrap" hidden><i id="rmBar"></i></div>
+      <p class="hint" id="rmStatus" aria-live="polite"></p>
+      <div class="qfoot"><button class="btn ghost" id="rmBack">Back</button><button class="btn primary" id="rmConnect">Connect</button></div>
+    </div>
+  </div>
+</dialog>
+<div class="rmtv" id="rmTv" hidden>
+  <h1>📺 TV display</h1>
+  <p>On your phone, open Phirki, tap <b>📡 Remote</b>, choose <b>This is my phone</b> and enter:</p>
+  <div class="rmbig" id="rmTvCode">····</div>
+  <div class="rmbar" id="rmTvBarWrap" hidden><i id="rmTvBar"></i></div>
+  <p id="rmTvStatus" aria-live="polite">Getting a code…</p>
+  <button class="btn ghost" id="rmTvCancel">Cancel</button>
+</div>
+<div class="rmbadge" id="rmBadge" hidden></div>
+<div class="rmpanel" id="rmPanel" hidden role="dialog" aria-modal="true" aria-label="Phone remote">
+  <div class="inner">
+    <div class="rmtop"><span id="rmConn">📡 Connected</span>
+      <button class="btn small ghost" id="rmReconnect" hidden>Reconnect</button>
+      <button class="btn small ghost" id="rmResend">Resend game</button>
+      <button class="btn small ghost" id="rmQuit">Disconnect</button></div>
+    <div id="rmBody"></div>
+  </div>
+</div>
 <div id="bgPhoto" hidden></div>
 <div class="intro" id="intro" hidden role="dialog" aria-modal="true" aria-label="Khush Aamdeed, welcome to Phirki">
   <div class="stage s1">
@@ -1992,6 +2071,297 @@ $('#wAgain').onclick = () => { closeWinner(); welcomedThisBoard = false; S.quest
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#winner').hidden) closeWinner(); });
 
 $('#qdImg').onclick = e => { if (!Tiles.on) e.target.classList.toggle('zoom'); };
+
+/* ================= PHONE REMOTE ================= */
+const RM_PREFIX = 'phirki-tv-', RM_CHUNK = 12000, RM_WINDOW = 8;
+const RM = { role:null, peer:null, conn:null, code:null, ready:false, gameId:null, rx:null, tx:null, payload:null,
+  lastState:'', stateTimer:null, txTimer:null, wake:null, state:null, key:'' };
+function rmHash(str){ let h = 5381; for (let i = 0; i < str.length; i += 7) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0; return h.toString(36) + '-' + str.length.toString(36); }
+async function rmWake(){ try { if ('wakeLock' in navigator && !RM.wake){ RM.wake = await navigator.wakeLock.request('screen'); RM.wake.addEventListener('release', () => RM.wake = null); } } catch(e){} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && RM.role) rmWake(); });
+const hasPeer = () => typeof window.Peer === 'function';
+
+function rmCleanup(){
+  clearInterval(RM.stateTimer); clearInterval(RM.txTimer);
+  try { RM.conn && RM.conn.close(); } catch(e){}
+  try { RM.peer && RM.peer.destroy(); } catch(e){}
+  Object.assign(RM, { role:null, peer:null, conn:null, ready:false, rx:null, tx:null, lastState:'', state:null, key:'' });
+  $('#rmBadge').hidden = true; $('#rmPanel').hidden = true; $('#rmTv').hidden = true;
+  try { RM.wake && RM.wake.release(); } catch(e){}
+}
+function rmOpenDialog(){
+  $('#rmChoose').hidden = false; $('#rmPhoneStep').hidden = true; $('#rmConnect').disabled = false;
+  $('#rmDialog').showModal();
+}
+$('#rmBtn').onclick = () => { if (RM.role === 'phone' && RM.ready) return rmShowPanel(); rmOpenDialog(); };
+$('#rmClose').onclick = () => $('#rmDialog').close();
+$('#rmBack').onclick = () => { if (RM.role === 'phone' && !RM.ready) rmCleanup(); rmOpenDialog(); };
+$('#rmAsTv').onclick = rmStartTv;
+$('#rmAsPhone').onclick = () => { $('#rmChoose').hidden = true; $('#rmPhoneStep').hidden = false; $('#rmStatus').textContent = ''; $('#rmBarWrap').hidden = true; setTimeout(() => $('#rmCode').focus(), 50); };
+
+/* ---------- TV side ---------- */
+function rmBadge(){
+  const b = $('#rmBadge'); if (RM.role !== 'tv'){ b.hidden = true; return; }
+  const on = RM.conn && RM.conn.open; b.hidden = false; b.classList.toggle('off', !on);
+  b.textContent = on ? '📱 Remote connected' : `📡 Remote code ${RM.code || '…'}`;
+}
+function rmStartTv(){
+  if ($('#rmDialog').open) $('#rmDialog').close();
+  if (!hasPeer()) return toast('The remote needs an internet connection. Reload the page and try again.');
+  rmCleanup(); RM.role = 'tv';
+  try { ac(); } catch(e){}                       // unlock sound while we still have a click
+  const el = document.documentElement, fs = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (fs && !document.fullscreenElement){ try { const r = fs.call(el); if (r && r.catch) r.catch(() => {}); } catch(e){} }
+  $('#rmTv').hidden = false; $('#rmTvCode').textContent = '····'; $('#rmTvBarWrap').hidden = true; $('#rmTvStatus').textContent = 'Getting a code…';
+  rmWake();
+  const tryCode = () => {
+    const code = String(Math.floor(1000 + Math.random() * 9000)), peer = new Peer(RM_PREFIX + code);
+    RM.peer = peer;
+    peer.on('open', () => { RM.code = code; $('#rmTvCode').textContent = code; $('#rmTvStatus').textContent = 'Waiting for your phone…'; rmBadge(); });
+    peer.on('error', err => {
+      if (err.type === 'unavailable-id'){ try { peer.destroy(); } catch(e){} if (RM.role === 'tv') tryCode(); return; }
+      if (err.type === 'peer-unavailable') return;
+      $('#rmTvStatus').textContent = `Connection problem (${err.type}). Check the internet and try again.`;
+    });
+    peer.on('disconnected', () => { try { if (RM.role === 'tv') peer.reconnect(); } catch(e){} });
+    peer.on('connection', rmTvConn);
+  };
+  tryCode();
+  RM.stateTimer = setInterval(rmPush, 250);
+}
+$('#rmTvCancel').onclick = () => rmCleanup();
+function rmTvConn(conn){
+  if (RM.conn && RM.conn !== conn){ try { RM.conn.close(); } catch(e){} }
+  RM.conn = conn; RM.ready = false; RM.lastState = '';
+  conn.on('open', () => { rmBadge(); $('#rmTvStatus').textContent = '📱 Phone connected. Checking the game…'; });
+  conn.on('data', m => rmTvData(conn, m));
+  conn.on('close', () => { if (RM.conn === conn){ RM.conn = null; RM.ready = false; rmBadge(); } });
+}
+function rmTvData(conn, m){
+  if (!m || typeof m !== 'object' || conn !== RM.conn) return;
+  if (m.t === 'hello'){
+    if (m.gid && m.gid === RM.gameId){ RM.ready = true; RM.lastState = ''; $('#rmTv').hidden = true; rmBadge(); conn.send({ t:'ready' }); rmPush(); }
+    else conn.send({ t:'need' });
+    return;
+  }
+  if (m.t === 'xfer'){
+    RM.ready = false;
+    RM.rx = { gid:m.gid, total:m.total, got:0, done:false, blobs:m.blobs.map(b => ({ id:b.id, n:b.n, parts:new Array(b.n) })) };
+    $('#rmTv').hidden = false; $('#rmTvBarWrap').hidden = false; rmTvProgress();
+    return;
+  }
+  if (m.t === 'c'){
+    const rx = RM.rx; if (!rx) return;
+    const b = rx.blobs[m.b];
+    if (b && m.i >= 0 && m.i < b.n && b.parts[m.i] === undefined){ b.parts[m.i] = m.d; rx.got++; }
+    conn.send({ t:'a', s:m.s });
+    rmTvProgress();
+    if (rx.got === rx.total && !rx.done){ rx.done = true; rmTvApply(conn, rx); }
+    return;
+  }
+  if (m.t === 'cmd' && RM.ready) rmDo(m);
+}
+function rmTvProgress(){
+  const rx = RM.rx; if (!rx) return;
+  const pct = Math.round(rx.got / Math.max(1, rx.total) * 100);
+  $('#rmTvBar').style.width = pct + '%'; $('#rmTvStatus').textContent = `Loading the game from your phone… ${pct}%`;
+}
+async function rmTvApply(conn, rx){
+  $('#rmTvStatus').textContent = 'Setting up the game…';
+  try {
+    const blobs = rx.blobs.map(b => ({ id:b.id, data:b.parts.join('') }));
+    const game = JSON.parse(blobs.find(b => b.id === '__game').data);
+    await IMG.clear();
+    for (const b of blobs) if (b.id !== '__game') await IMG.put(b.id, b.data);
+    S = normalize(game); currentPreset = null; welcomedThisBoard = false; shown = {}; scoreKey = '';
+    save(); resetForm();
+    RM.gameId = rx.gid; RM.rx = null; RM.ready = true; RM.lastState = '';
+    $('#rmTv').hidden = true; $('#rmTvBarWrap').hidden = true;
+    setTV(true);                                  // big layout on the Play screen, plays the intro for a fresh game
+    conn.send({ t:'ready' }); rmBadge(); rmPush();
+  } catch(e){
+    RM.rx = null; $('#rmTvStatus').textContent = 'The game could not be loaded. Tap Resend game on the phone.';
+    try { conn.send({ t:'fail' }); } catch(err){}
+  }
+}
+function rmVisible(sel){ const b = $(sel); return b && !b.disabled && b.getClientRects().length > 0 ? b : null; }
+function rmDo(m){
+  const click = sel => { const b = rmVisible(sel); if (b) b.click(); };
+  switch (m.c){
+    case 'spin': if (!$('#qDialog').open && $('#intro').hidden && $('#welcome').hidden && $('#winner').hidden) spin(); break;
+    case 'timer': click('#qdPause'); break;
+    case 'reveal': click('#qdReveal'); break;
+    case 'tile': click('#qdTileOne'); break;
+    case 'tileAll': click('#qdTileAll'); break;
+    case 'right': click('#qdAward [data-right]'); break;
+    case 'wrong': click('#qdAward [data-wrong]'); break;
+    case 'putback': click('#qdPutBack'); break;
+    case 'done': click('#qdDone'); break;
+    case 'continue': click('#qdContinue'); break;
+    case 'next': if (S.teams.length && !$('#qDialog').open){ S.turn = (S.turn + 1) % S.teams.length; save(); renderPlay(); } break;
+    case 'adj': { const t = S.teams[m.i]; if (t){ t.score += (+m.by || 0); save(); renderPlay(); } break; }
+    case 'introGo': if (!$('#intro').hidden) hideIntro(); break;
+    case 'welStart': if (!$('#welcome').hidden) hideWelcome(); break;
+    case 'again': click('#wAgain'); break;
+    case 'winClose': click('#wClose'); break;
+  }
+  setTimeout(rmPush, 80);
+}
+function rmSnap(){
+  const dlg = $('#qDialog').open;
+  const phase = !$('#intro').hidden ? 'intro' : !$('#welcome').hidden ? 'welcome' : !$('#winner').hidden ? 'winner'
+    : dlg ? (!$('#qdMbox').hidden ? 'mystery' : 'question') : spinning ? 'spinning' : 'idle';
+  const s = { phase, introTwo:$('#intro').classList.contains('two'), turnText:$('#turnText').textContent, progress:$('#progress').textContent,
+    turn:S.turn, teams:S.teams.map(t => ({ name:t.name, score:t.score })), canSpin:S.questions.some(q => !q.used) };
+  if (phase === 'question' && activeQ){
+    const btn = sel => { const b = $(sel); return b && b.getClientRects().length ? { label:b.textContent, dis:b.disabled } : null; };
+    const pts = $('#qdPts').firstChild;
+    s.q = { sec:$('#qdSec').hidden ? '' : $('#qdSec').textContent, diff:$('#qdDiff').textContent, pts:pts ? pts.textContent : '',
+      kind:activeDouble ? 'Double your points: right doubles the score, wrong halves it' : activeMys ? 'Mystery box: a right answer opens the box' : '',
+      text:activeQ.text, arabic:activeQ.arabic || '', answer:activeQ.answer || '', revealed:!$('#qdAnswer').hidden,
+      hasPic:!$('#qdImgWrap').hidden, tiles:Tiles.on ? `${Tiles.shown} of ${Tiles.n}` : '',
+      timer:$('#qdTimerWrap').hidden ? null : $('#qdTimeText').textContent, timerBtn:$('#qdPause').textContent,
+      right:btn('#qdAward [data-right]'), wrong:btn('#qdAward [data-wrong]'), putBack:!$('#qdPutBack').hidden, doneLabel:$('#qdDone').textContent };
+  }
+  if (phase === 'mystery') s.m = { icon:$('#qdBoxIcon').textContent, prize:$('#qdPrize').textContent, sub:$('#qdPrizeSub').textContent, cont:!$('#qdContinue').hidden };
+  if (phase === 'winner') s.w = { title:$('#wTitle').textContent, sub:$('#wSub').textContent };
+  return s;
+}
+function rmPush(){
+  if (RM.role !== 'tv' || !RM.ready || !RM.conn || !RM.conn.open) return;
+  const j = JSON.stringify(rmSnap()); if (j === RM.lastState) return;
+  RM.lastState = j; try { RM.conn.send({ t:'state', j }); } catch(e){}
+}
+
+/* ---------- Phone side ---------- */
+async function rmPayload(){
+  const images = await gatherImages(S);
+  const blobs = [['__game', JSON.stringify(S)], ...Object.entries(images)];
+  const gid = rmHash(blobs.map(b => b[0] + ':' + b[1].length).join('|') + blobs[0][1]);
+  return { blobs, gid };
+}
+$('#rmConnect').onclick = () => {
+  const code = $('#rmCode').value.trim();
+  if (!/^\d{4}$/.test(code)) return toast('Type the 4-digit code from the TV.');
+  if (!hasPeer()) return toast('The remote needs an internet connection. Reload the page and try again.');
+  rmPhoneConnect(code);
+};
+$('#rmCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('#rmConnect').click(); });
+function rmFail(msg){
+  $('#rmConnect').disabled = false; $('#rmStatus').textContent = msg;
+  if (!$('#rmPanel').hidden){ $('#rmConn').textContent = '⚠ ' + msg; $('#rmConn').classList.add('off'); $('#rmReconnect').hidden = false; }
+}
+function rmPhoneConnect(code){
+  rmCleanup(); RM.role = 'phone'; RM.code = code;
+  $('#rmConnect').disabled = true; $('#rmStatus').textContent = 'Connecting to the TV…';
+  const peer = new Peer(); RM.peer = peer;
+  peer.on('open', () => {
+    const conn = peer.connect(RM_PREFIX + code, { serialization:'json', reliable:true }); RM.conn = conn;
+    const t = setTimeout(() => { if (!conn.open) rmFail('Could not reach the TV. Check the code and that both devices are online.'); }, 15000);
+    conn.on('open', async () => {
+      clearTimeout(t); $('#rmStatus').textContent = 'Connected. Checking the game on the TV…';
+      RM.payload = await rmPayload(); RM.gameId = RM.payload.gid;
+      conn.send({ t:'hello', gid:RM.gameId });
+    });
+    conn.on('data', m => rmPhoneData(conn, m));
+    conn.on('close', () => { if (RM.conn === conn){ RM.ready = false; rmFail('Connection to the TV was lost.'); } });
+  });
+  peer.on('error', err => rmFail(err.type === 'peer-unavailable' ? 'No TV found with that code. Check the number on the TV.' : `Connection problem (${err.type}).`));
+}
+function rmPhoneData(conn, m){
+  if (!m || typeof m !== 'object' || conn !== RM.conn) return;
+  if (m.t === 'need') rmSend(conn);
+  else if (m.t === 'a') rmAck(m.s);
+  else if (m.t === 'ready'){ RM.ready = true; clearInterval(RM.txTimer); RM.tx = null; if ($('#rmDialog').open) $('#rmDialog').close(); rmShowPanel(); }
+  else if (m.t === 'fail') rmFail('The TV could not load the game. Tap Resend game to try again.');
+  else if (m.t === 'state'){ try { RM.state = JSON.parse(m.j); } catch(e){ return; } renderRemote(RM.state); }
+}
+async function rmSend(conn){
+  if (!RM.payload) RM.payload = await rmPayload();
+  const { blobs, gid } = RM.payload; RM.gameId = gid;
+  const chunks = [], meta = [];
+  blobs.forEach(([id, d], b) => { const n = Math.max(1, Math.ceil(d.length / RM_CHUNK)); meta.push({ id, n });
+    for (let i = 0; i < n; i++) chunks.push({ b, i, d:d.slice(i * RM_CHUNK, (i + 1) * RM_CHUNK) }); });
+  conn.send({ t:'xfer', gid, total:chunks.length, blobs:meta });
+  RM.tx = { conn, chunks, next:0, inflight:new Map(), acked:0, total:chunks.length };
+  $('#rmBarWrap').hidden = false; $('#rmBar').style.width = '0%';
+  if ($('#rmDialog').open) $('#rmStatus').textContent = 'Sending the game to the TV… 0%';
+  rmPump();
+  clearInterval(RM.txTimer);
+  RM.txTimer = setInterval(() => { const tx = RM.tx; if (!tx) return clearInterval(RM.txTimer);
+    const now = performance.now(); tx.inflight.forEach((t0, s) => { if (now - t0 > 4000) rmSendChunk(s); }); }, 1000);
+}
+function rmSendChunk(s){ const tx = RM.tx, c = tx.chunks[s]; try { tx.conn.send({ t:'c', s, b:c.b, i:c.i, d:c.d }); tx.inflight.set(s, performance.now()); } catch(e){} }
+function rmPump(){ const tx = RM.tx; if (!tx) return; while (tx.next < tx.total && tx.inflight.size < RM_WINDOW) rmSendChunk(tx.next++); }
+function rmAck(s){
+  const tx = RM.tx; if (!tx || !tx.inflight.has(s)) return;
+  tx.inflight.delete(s); tx.acked++;
+  const pct = Math.round(tx.acked / tx.total * 100);
+  $('#rmBar').style.width = pct + '%'; $('#rmStatus').textContent = pct < 100 ? `Sending the game to the TV… ${pct}%` : 'Setting up the game on the TV…';
+  rmPump();
+}
+function rmShowPanel(){
+  $('#rmPanel').hidden = false; $('#rmReconnect').hidden = true;
+  $('#rmConn').classList.remove('off'); $('#rmConn').textContent = `📡 Connected to TV ${RM.code}`;
+  rmWake(); if (RM.state) renderRemote(RM.state); else $('#rmBody').innerHTML = '<p class="rmcenter hint">Waiting for the TV…</p>';
+}
+$('#rmQuit').onclick = () => { if (!confirm('Disconnect from the TV? The game stays on the TV, and you can reconnect with the same code.')) return; rmCleanup(); };
+$('#rmReconnect').onclick = () => { const code = RM.code; $('#rmConn').textContent = 'Reconnecting…'; rmPhoneConnect(code); };
+$('#rmResend').onclick = async () => {
+  if (!RM.conn || !RM.conn.open) return toast('Not connected to the TV.');
+  if (!confirm('Send the game again? The TV restarts it from the beginning, with the questions you have on this phone now.')) return;
+  RM.ready = false; RM.payload = null; RM.state = null; RM.key = '';
+  $('#rmPanel').hidden = true; rmOpenDialog(); $('#rmChoose').hidden = true; $('#rmPhoneStep').hidden = false; $('#rmConnect').disabled = true;
+  rmSend(RM.conn);
+};
+function rmB(c, label, cls = '', extra = ''){ return `<button class="btn ${cls}" data-rc="${c}" ${extra}>${label}</button>`; }
+function renderRemote(s){
+  let h = `<div class="rmturn">${esc(s.turnText || '')}</div>`;
+  if (s.phase === 'intro') h += `<div class="rmcard rmcenter"><p class="hint">The intro is playing on the TV.</p>${rmB('introGo', s.introTwo ? '▶ Start the game' : 'Skip to the logo', 'primary')}</div>`;
+  else if (s.phase === 'welcome') h += `<div class="rmcard rmcenter"><p class="hint">The welcome screen is on the TV.</p>${rmB('welStart', '▶ Start the game', 'primary')}</div>`;
+  else if (s.phase === 'idle' || s.phase === 'spinning')
+    h += `<button class="rmspin" data-rc="spin" ${s.phase === 'spinning' || !s.canSpin ? 'disabled' : ''}>${s.phase === 'spinning' ? '…' : 'SPIN'}</button>
+      <p class="rmcenter hint">${esc(s.progress || '')}</p><div class="rmgrid">${rmB('next', "Next team's turn", 'ghost wide', s.phase === 'spinning' ? 'disabled' : '')}</div>`;
+  else if (s.phase === 'question' && s.q){
+    const q = s.q;
+    h += `<div class="rmcard"><div class="rmmeta">${q.sec ? `<span>${esc(q.sec)}</span>` : ''}<span>${esc(q.diff)}</span><b data-dyn="pts"></b></div>
+      ${q.kind ? `<p class="hint" style="margin:0 0 .4rem">${esc(q.kind)}</p>` : ''}
+      <div class="rmq" dir="auto">${esc(q.text)}</div>${q.arabic ? `<div class="ar">${esc(q.arabic)}</div>` : ''}
+      ${q.hasPic ? `<p class="hint" style="margin:.2rem 0">🖼 Picture is showing on the TV${q.tiles ? ', <span data-dyn="tiles"></span> tiles open' : ''}</p>` : ''}
+      <div class="rmans"><small>Answer: only you can see this${q.revealed ? ' (now also on the TV)' : ''}</small><div dir="auto">${esc(q.answer || '(no answer entered)')}</div></div>
+      ${q.timer !== null ? '<p class="hint" style="margin:.2rem 0">⏱ <span data-dyn="timer"></span></p>' : ''}
+      <div class="rmgrid">
+        ${q.timer !== null ? rmB('timer', '<span data-dyn="timerBtn"></span>', q.timerBtn.includes('Start') ? 'primary' : '') : ''}
+        ${!q.revealed ? rmB('reveal', 'Show answer on TV') : ''}
+        ${q.tiles ? rmB('tile', 'Reveal a tile') + rmB('tileAll', 'Reveal all', 'ghost') : ''}
+        ${q.right ? rmB('right', '<span data-dyn="right"></span>', 'good wide', q.right.dis ? 'disabled' : '') : ''}
+        ${q.wrong ? rmB('wrong', '<span data-dyn="wrong"></span>', 'bad wide', q.wrong.dis ? 'disabled' : '') : ''}
+        ${q.putBack ? rmB('putback', 'Put back on wheel', 'ghost') : ''}
+        ${rmB('done', esc(q.doneLabel), 'ghost')}
+      </div></div>`;
+  }
+  else if (s.phase === 'mystery' && s.m)
+    h += `<div class="rmcard rmcenter"><div style="font-size:3.4rem;line-height:1.2">${esc(s.m.icon)}</div><div class="rmprize">${esc(s.m.prize)}</div>
+      ${s.m.sub ? `<p class="hint">${esc(s.m.sub)}</p>` : ''}${s.m.cont ? rmB('continue', 'Continue', 'primary') : '<p class="hint">Opening the box on the TV…</p>'}</div>`;
+  else if (s.phase === 'winner' && s.w)
+    h += `<div class="rmcard rmcenter"><div style="font-size:3rem">🏆</div><div class="rmprize">${esc(s.w.title)}</div><p class="hint">${esc(s.w.sub)}</p>
+      <div class="rmgrid">${rmB('again', 'Play again', 'primary')}${rmB('winClose', 'Close', 'ghost')}</div></div>`;
+  h += `<div class="rmscores">${s.teams.map((t, i) => `<div class="r ${i === s.turn ? 'cur' : ''}"><span>${esc(t.name)}</span><b data-dyn="score${i}"></b>
+      <button class="btn small" data-rc="adj" data-i="${i}" data-by="100" aria-label="Add 100 to ${esc(t.name)}">+</button>
+      <button class="btn small" data-rc="adj" data-i="${i}" data-by="-100" aria-label="Take 100 from ${esc(t.name)}">−</button></div>`).join('')}</div>`;
+  // rebuild only when the layout changes, so a tap is never lost while the timer ticks
+  if (h !== RM.key){ RM.key = h; $('#rmBody').innerHTML = h; }
+  const dyn = { pts:s.q && s.q.pts, tiles:s.q && s.q.tiles, timer:s.q && s.q.timer, timerBtn:s.q && s.q.timerBtn,
+    right:s.q && s.q.right && s.q.right.label, wrong:s.q && s.q.wrong && s.q.wrong.label };
+  s.teams.forEach((t, i) => dyn['score' + i] = String(t.score));
+  document.querySelectorAll('#rmBody [data-dyn]').forEach(el => { const v = dyn[el.dataset.dyn]; if (v != null && el.textContent !== v) el.textContent = v; });
+}
+$('#rmBody').addEventListener('click', e => {
+  const b = e.target.closest('[data-rc]'); if (!b || b.disabled || !RM.conn || !RM.conn.open) return;
+  const m = { t:'cmd', c:b.dataset.rc }; if (b.dataset.i != null){ m.i = +b.dataset.i; m.by = +b.dataset.by; }
+  try { RM.conn.send(m); } catch(e){}
+  if (navigator.vibrate) try { navigator.vibrate(15); } catch(err){}
+});
 
 /* init */
 applySkin();
